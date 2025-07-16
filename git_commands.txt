@@ -1,0 +1,20 @@
+git config --global user.name "shenekin"
+git config --global user.email "281879341@qq.com"
+
+
+Create git repository:
+
+
+mkdir os-platform
+cd os-platform
+git init 
+touch README.md
+git add README.md
+git commit -m "first commit"
+git remote add origin https://gitee.com/ekinshen/os-platform.git
+git push -u origin "master"
+
+Existing repository?
+cd existing_git_repo
+git remote add origin https://gitee.com/ekinshen/os-platform.git
+git push -u origin "master"

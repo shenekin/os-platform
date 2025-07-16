@@ -1,0 +1,66 @@
+1. ?? Oracle 19c ???(??? Oracle ??)
+??: https://www.oracle.com/database/technologies/oracle19c-linux-downloads.html
+
+???: LINUX.X64_193000_db_home.zip
+
+2. ???? $ORACLE_HOME
+su - oracle
+export ORACLE_HOME=/u01/app/oracle/product/19.3.0/dbhome_1
+unzip LINUX.X64_193000_db_home.zip -d $ORACLE_HOME
+
+???? Oracle ??
+1. ?????? .bash_profile
+cat >> ~/.bash_profile <<EOF
+export ORACLE_BASE=/u01/app/oracle
+export ORACLE_HOME=\$ORACLE_BASE/product/19.3.0/dbhome_1
+export ORACLE_SID=orcl
+export PATH=\$ORACLE_HOME/bin:\$PATH
+EOF
+
+source ~/.bash_profile
+
+2. Install GNOME
+sudo yum group list
+sudo yum groupinstall "GNOME Desktop" -y
+sudo systemctl set-default graphical.target
+sudo reboot
+
+
+cd $ORACLE_HOME
+./runInstaller
+
+??“Set Up Software Only” ? “Create and Configure a Single Instance Database”
+
+?????? root ?????????:
+
+# ??
+sh /u01/app/oraInventory/orainstRoot.sh
+sh /u01/app/oracle/product/19.3.0/dbhome_1/root.sh
+
+ ???????????
+1. ?? netca ?????
+netca
+2. ?? dbca ?????
+dbca
+
+
+
+SID:orcl
+
+
+
+
+bash
+Copy
+Edit
+lsnrctl start
+sqlplus / as sysdba
+SQL> startup;
+
+sql
+Copy
+Edit
+SQL> select name, open_mode from v$database;
+
+(CentOS)
+rc.local ? systemd 
