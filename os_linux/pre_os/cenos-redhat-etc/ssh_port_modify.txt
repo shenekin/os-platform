@@ -1,0 +1,6 @@
+sudo sed -i 's/^#Port 22/Port 2286/' /etc/ssh/sshd_config && \
+sudo firewall-cmd --permanent --add-port=2222/tcp && \
+sudo firewall-cmd --permanent --remove-port=22/tcp && \
+sudo firewall-cmd --reload && \
+sudo systemctl restart sshd && \
+

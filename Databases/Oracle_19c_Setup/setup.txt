@@ -12,9 +12,9 @@ unzip LINUX.X64_193000_db_home.zip -d $ORACLE_HOME
 1. ?????? .bash_profile
 cat >> ~/.bash_profile <<EOF
 export ORACLE_BASE=/u01/app/oracle
-export ORACLE_HOME=\$ORACLE_BASE/product/19.3.0/dbhome_1
+export ORACLE_HOME=$ORACLE_BASE/product/19.3.0/dbhome_1
 export ORACLE_SID=orcl
-export PATH=\$ORACLE_HOME/bin:\$PATH
+export PATH=$ORACLE_HOME/bin:$PATH
 EOF
 
 source ~/.bash_profile

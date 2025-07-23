@@ -1,0 +1,58 @@
+
+Shell Command to Set Up a Local YUM Repository:# Step 1: Create a mount point for ISO (if using ISO)
+
+mkdir -p /mnt/localrepo
+
+# Step 2: Mount the ISO file (replace with your actual ISO path)
+mount -o loop /path/to/CentOS-8-x86_64-dvd.iso /mnt/localrepo
+
+# Step 3: Create a YUM repo configuration file
+cat > /etc/yum.repos.d/local.repo <<EOF
+[LocalRepo]
+name=Local Repository
+baseurl=file:///mnt/localrepo
+enabled=1
+gpgcheck=0
+EOF
+
+# Step 4: Clean YUM metadata and cache
+yum clean all
+yum makecache
+
+# Step 5: Test the repository
+yum repolist enabled
+
+
+
+# Create the directory with RPMs (or copy them into it)
+mkdir -p /opt/localrepo
+cp /path/to/*.rpm /opt/localrepo
+
+# Install createrepo tool if not present
+yum install -y createrepo
+
+# Generate repository metadata
+createrepo /opt/localrepo
+
+# Create repo file
+cat > /etc/yum.repos.d/local_rpm.repo <<EOF
+[LocalRPMRepo]
+name=Local RPM Directory
+baseurl=file:///opt/localrepo
+enabled=1
+gpgcheck=0
+EOF
+
+# Rebuild yum cache
+yum clean all
+yum makecache
+
+
+
+ISO method is useful when offline or installing from OS media.
+
+RPM folder method is useful for custom software or private RPMs.
+
+Set gpgcheck=1 and import GPG keys for secure production environments.
+
+Replace yum with dnf on CentOS/RHEL/Rocky 8+ as needed.
