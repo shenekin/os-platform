@@ -9,3 +9,59 @@ export ORA_CRS_HOME=/opt/grid/19c/crs
 export SQLPATH=$ORACLE_HOME/sqlplus/admin
 export TMP=/tmp
 export TMPDIR=/tmp
+# .bash_profile
+
+# Get the aliases and functions
+if [ -f ~/.bashrc ]; then
+	. ~/.bashrc
+fi
+
+# User specific environment and startup programs
+
+PATH=$PATH:$HOME/.local/bin:$HOME/bin
+
+export PATH
+# Oracle 19c Environment Variables
+export ORACLE_HOME=/u01/app/oracle/product/19/db_1
+export ORACLE_SID=orcl
+export ORACLE_UNQNAME=orcl
+export ORACLE_BASE=/u01/app/oracle
+export PATH=/usr/sbin:$PATH
+export PATH=$ORACLE_HOME/bin:$PATH
+export ORACLE_HOSTNAME=oracle.server
+export LD_LIBRARY_PATH=$ORACLE_HOME/lib:$LD_LIBRARY_PATH
+#export TNS_ADMIN=$ORACLE_HOME/network/admin
+export NLS_LANG=AMERICAN_AMERICA.AL32UTF8
+#export ORA_CRS_HOME=/opt/grid/19c/crs
+#export SQLPATH=$ORACLE_HOME/sqlplus/admin
+export TMP=/tmp
+export CLASSPATH=$ORACLE_HOME/jlib:ORACLE_HOME/rdbms/jlib
+export TMPDIR=$TMP
+# .bash_profile
+
+# Get the aliases and functions
+if [ -f ~/.bashrc ]; then
+	. ~/.bashrc
+fi
+
+# User specific environment and startup programs
+
+PATH=$PATH:$HOME/.local/bin:$HOME/bin
+
+export PATH
+# Oracle 19c Environment Variables
+export ORACLE_HOME=/u01/app/oracle/product/19/db_1
+export ORACLE_SID=orcl
+export ORACLE_UNQNAME=orcl
+export ORACLE_BASE=/u01/app/oracle
+export PATH=/usr/sbin:$PATH
+export PATH=$ORACLE_HOME/bin:$PATH
+export ORACLE_HOSTNAME=oracle.server
+export LD_LIBRARY_PATH=$ORACLE_HOME/lib:$LD_LIBRARY_PATH
+#export TNS_ADMIN=$ORACLE_HOME/network/admin
+export NLS_LANG=AMERICAN_AMERICA.AL32UTF8
+#export ORA_CRS_HOME=/opt/grid/19c/crs
+#export SQLPATH=$ORACLE_HOME/sqlplus/admin
+export TMP=/tmp
+export CLASSPATH=$ORACLE_HOME/jlib:ORACLE_HOME/rdbms/jlib
+export TMPDIR=$TMP
