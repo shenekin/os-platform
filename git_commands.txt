@@ -18,3 +18,7 @@ Existing repository?
 cd existing_git_repo
 git remote add origin https://gitee.com/ekinshen/os-platform.git
 git push -u origin "master"
+
+update
+git fetch
+git pull https://gitee.com/ekinshen/os-platform.git
