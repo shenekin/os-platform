@@ -65,3 +65,29 @@ SQL> select name, open_mode from v$database;
 
 (CentOS)
 rc.local ? systemd 
+
+#######################################################################################################
+#######################################################################################################
+new env of oracle user
+
+# .bash_profile
+
+# Get the aliases and functions
+if [ -f ~/.bashrc ]; then
+	. ~/.bashrc
+fi
+
+# User specific environment and startup programs
+
+PATH=$PATH:$HOME/.local/bin:$HOME/bin
+
+export PATH
+# Oracle 19c Environment Variables
+export ORACLE_HOME=/u01/app/oracle/product/19/db_1
+export ORACLE_SID=orcl
+export ORACLE_UNQNAME=orcl
+export ORACLE_BASE=/u01/app/oracle
+export PATH=/usr/sbin:$PATH
+export PATH=$ORACLE_HOME/bin:$PATH
+export ORACLE_HOSTNAME=oracle19c
+export TNS_ADMIN=$ORACLE_HOME/network/admin
