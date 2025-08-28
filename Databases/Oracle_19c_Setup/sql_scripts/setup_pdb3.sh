@@ -1,7 +1,24 @@
-/bin/bash
+#!/bin/bash
+# Script to create PDB3 in CDBDEV
 
-!mkdir /u01/app/oracle/oradata/ORCL/ORCLCDB/orclpdb3
+export ORACLE_SID=cdbdev
+export ORACLE_HOME=/u01/app/oracle/product/19/db_1/
+export PATH=$ORACLE_HOME/bin:$PATH
 
-CREATE PLUGGABLE DATABASE ORCLPDB3 ADMIN USER admin IDENTIFIED BY CLOUD_4U ROLES=(CONNECT) FILE_NAME_CONVERT=('/u01/app/oracle/oradata/ORCL/ORCLCDB/pdbseed','/u01/app/oracle/oradata/ORCL/ORCLCDB/orclpdb3');
+sqlplus / as sysdba <<EOF
+WHENEVER SQLERROR EXIT SQL.SQLCODE
 
-alter PLUGGABLE DATABASE ORCLPDB3 open;
+-- Create PDB3
+CREATE PLUGGABLE DATABASE pdb3
+  ADMIN USER pdbadmin IDENTIFIED BY Oracle123
+  FILE_NAME_CONVERT=(
+    '/u01/app/oracle/oradata/ORCL/cdbdev/pdbseed/',
+    '/u01/app/oracle/oradata/ORCL/cdbdev/pdb3/'
+  );
+
+-- Open it
+ALTER PLUGGABLE DATABASE pdb3 OPEN;
+ALTER PLUGGABLE DATABASE pdb3 SAVE STATE;
+
+EXIT
+EOF
