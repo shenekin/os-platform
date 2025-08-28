@@ -1,5 +1,5 @@
 /bin/bash
-
+ALTER PLUGGABLE DATABASE ORCLPDB3 CLOSE;
 !mkdir /u01/app/oracle/oradata/ORCL/ORCLCDB/orclpdb3
 
 CREATE PLUGGABLE DATABASE ORCLPDB3 ADMIN USER admin IDENTIFIED BY CLOUD_4U ROLES=(CONNECT) FILE_NAME_CONVERT=('/u01/app/oracle/oradata/ORCL/ORCLCDB/pdbseed','/u01/app/oracle/oradata/ORCL/ORCLCDB/orclpdb3');
