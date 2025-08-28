@@ -1,0 +1,8 @@
+chmod +x $ORACLE_HOME/bin/dbstart
+chmod +x $ORACLE_HOME/bin/dbshut
+
+
+
+systemctl daemon-reload
+systemctl enable oracle.service
+systemctl start oracle.service
