@@ -1,0 +1,11 @@
+# Oracle 19c Environment Variables
+export ORACLE_HOME=/opt/oracle/product/19c/dbhome_1
+export ORACLE_SID=ORCL
+export PATH=$PATH:$ORACLE_HOME/bin
+export LD_LIBRARY_PATH=$ORACLE_HOME/lib:$LD_LIBRARY_PATH
+export TNS_ADMIN=$ORACLE_HOME/network/admin
+export NLS_LANG=AMERICAN_AMERICA.AL32UTF8
+export ORA_CRS_HOME=/opt/grid/19c/crs
+export SQLPATH=$ORACLE_HOME/sqlplus/admin
+export TMP=/tmp
+export TMPDIR=/tmp

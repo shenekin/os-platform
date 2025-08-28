@@ -1,0 +1,41 @@
+nano/source ~/.bash_profile
+
+# Oracle 19c Environment Variables
+export ORACLE_HOME=/opt/oracle/product/19c/dbhome_1
+export ORACLE_SID=ORCL
+export PATH=$PATH:$ORACLE_HOME/bin
+export LD_LIBRARY_PATH=$ORACLE_HOME/lib:$LD_LIBRARY_PATH
+export TNS_ADMIN=$ORACLE_HOME/network/admin
+export NLS_LANG=AMERICAN_AMERICA.AL32UTF8
+export ORA_CRS_HOME=/opt/grid/19c/crs
+export SQLPATH=$ORACLE_HOME/sqlplus/admin
+export TMP=/tmp
+export TMPDIR=/tmp
+
+
+Explanation of Each Variable:
+
+ORACLE_HOME: Path to the Oracle Home directory where Oracle software is installed.
+
+ORACLE_SID: Oracle System Identifier (SID) is the name of the Oracle database instance.
+
+PATH: Updates the system PATH to include Oracle binaries, allowing you to use Oracle utilities like sqlplus, rman, etc.
+
+LD_LIBRARY_PATH: Ensures that Oracle libraries are included in the system's library path.
+
+TNS_ADMIN: Specifies the location of the tnsnames.ora and other Oracle networking files.
+
+NLS_LANG: Specifies the locale and character set for Oracle sessions (in this case, American English with AL32UTF8).
+
+ORA_CRS_HOME: Path to Oracle Clusterware home (if using Oracle RAC).
+
+SQLPATH: Specifies the directory where SQL*Plus scripts are located.
+
+TMP and TMPDIR: Temporary directories for Oracle operations.
+
+
+source ~/.bash_profile
+
+echo $ORACLE_HOME
+echo $ORACLE_SID
+echo $TNS_ADMIN
