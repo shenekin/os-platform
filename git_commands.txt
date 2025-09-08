@@ -22,3 +22,27 @@ git push -u origin "master"
 update
 git fetch
 git pull https://gitee.com/ekinshen/os-platform.git
+
+
+1. Commit your changes
+
+If you want to keep your local modifications:
+
+git add .
+git commit -m "my local changes"
+git pull
+
+2. Stash your changes
+
+If you don’t want to commit yet, but still want to pull:
+
+git stash
+git pull
+git stash pop   # reapply your changes after pull
+
+3. Discard local changes
+
+Warning: this will remove your uncommitted changes
+
+git reset --hard
+git pull
