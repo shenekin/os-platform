@@ -4,6 +4,21 @@
 # Tested on Oracle Linux 7.9
 # Author: Ekin
 # ============================================================
+#This script will:
+
+	#Install dependencies
+
+	#Create Oracle user environment
+
+	#Extract Oracle software
+
+	#Install database software (silent)
+
+	#Run required root scripts
+
+	#Configure listener
+
+	#Create a CDB with one PDB
 
 ORACLE_BASE=/u01/app/oracle
 ORACLE_HOME=$ORACLE_BASE/product/19.0.0/dbhome_1
