@@ -1,0 +1,4 @@
+sqlplus / as sysdba
+
+Modify passwd of sys
+ALTER USER sys IDENTIFIED BY NewStrongPassword123;
