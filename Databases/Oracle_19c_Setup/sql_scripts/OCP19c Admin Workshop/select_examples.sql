@@ -25,6 +25,10 @@ ALTER PLUGGABLE DATABASE PDB$SEED OPEN;
 
 ALTER SESSION SET CONTAINER=pdb1;
 
+SELECT con_id,name,open_mode from v$containers;
+
+ALTER PLUGGABLE DATABASE PDB$SEED OPEN;
+
 
 #Create PDB from PDBSEED
 
@@ -32,6 +36,6 @@ CREATE PLUGGABLE DATABASE pdblab
     ADMIN USER pdb_admin IDENTIFIED BY oracle19c
     ROLES = (dba)
     DEFAULT TABLESPACE users
-    DATAFILE '/u01/app/oracle/oradata/ORCL/pdblab/pdblab01.dbf' SIZE 250M AUTOEXTEND ON
-    FILE_NAME_CONVERT = ('/u01/app/oracle/oradata/ORCL/pdbseed/',
-                         '/u01/app/oracle/oradata/ORCL/pdblab/');
+    DATAFILE '/u01/app/oracle/oradata/ORCLB/pdblab01.dbf' SIZE 250M AUTOEXTEND ON
+    FILE_NAME_CONVERT = ('/u01/app/oracle/oradata/ORCLB/pdbseed/',
+                         '/u01/app/oracle/oradata/ORCLB/pdblab/');
