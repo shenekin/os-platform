@@ -1,0 +1,103 @@
+#In this practice, you will perform a custom installation of the Oracle Instant Client software in order to install the Connection Manager software
+$ cd /stage
+$ pwd
+/stage
+$ unzip V982064-01.zip
+$ cd /stage/client
+$ pwd
+/stage/client
+$ ./runInstaller
+
+a.	Select the Installation Type by clicking Custom and then clicking Next.
+b.	Override the default and specify a new software location,
+/u01/app/oracle/product/client_1; click Next.
+c.	On the Available Product Components page, select Connection Manager and Oracle Net Listener and then click Next.
+d.	On the Summary Product page, click Install.
+e.	The install Product page shows progress of the installation. When the Execute Configuration Scripts window appears, run the script by:
+    1)	Open a new terminal window
+    2)	Become the root user with the su command
+    $ su -
+    # /u01/app/oracle/product/client_1/root.sh
+    $ echo "client:/u01/app/oracle/product/client_1:N" >> /etc/oratab
+    
+    
+# In this practice, you configure the cman.ora file on the Oracle Connection Manager host. The cman.ora file specifies the listening endpoint for the server, access control rules, and Oracle Connection Manager performance parameters.
+#Important: In this practice, the $ORACLE_HOME variable points to the client software home and NOT the database software home.
+
+2.	Copy the $ORACLE_HOME/network/admin/samples/cman.ora file to
+$ORACLE_HOME/network/admin/cman.ora
+$ cd $ORACLE_HOME/network/admin
+$ cp samples/cman.ora cman.ora
+$ mkdir -p /u01/app/oracle/cman/log
+$ mkdir -p /u01/app/oracle/cman/trace
+Change from	Change to
+<fqnhost>	    localhost
+<lsnport>	    1522
+<logdir>	    /u01/app/oracle/cman/log
+<trcdir>	    /u01/app/oracle/cman/trace
+max_gateway_processes	8
+min_gateway_processes	3
+
+vi cman.ora
+$ cmctl
+CMCTL> admin cman_localhost
+CMCTL :cman_localhost> startup
+
+#In this practice, you configure the database to register with Connection Manager.
+$ . oraenv
+$ cd $ORACLE_HOME/network/admin
+$ sqlplus / as sysdba
+SQL> alter system set remote_listener=LISTENER_CMAN;
+SQL> alter system register;
+
+#Configuring Clients for Oracle Connection Manager
+$ . oraenv
+$ netmgr
+b.	In the navigator pane, select Service Naming from Local menu.
+c.	Click the plus sign (+) on the toolbar or select Create from the Edit menu.
+d.	Enter C_ORCLCDB in the Net Service Name field and then click Next.
+e.	Select the TCP/IP protocol for Oracle Connection Manager and then click Next.
+f.	For Host Name, specify localhost
+g.	Specify 1522 as the Oracle Connection Manager port and localhost and then click
+Next.
+Note: The default port number for Oracle Connection Manager is 1521, and the protocol is TCP/IP.
+h.	Enter ORCLCDB in the Service Name field and then let the connection type default to
+Database Default. Click Next.
+i.	Click Finish and save your configuration; then close the Net Service Name Wizard.
+$ sqlplus system/password@C_ORCLCDB
+
+#In this practice, you configure the database server for multiplexing.
+$ . oraenv
+ORACLE_SID = [client] ? orclcdb
+The Oracle base remains unchanged with value /u01/app/oracle
+$ sqlplus / as sysdba
+SQL> alter system set dispatchers="(PROTOCOL=tcp)(MULTIPLEX=on)";
+SQL> column "OS USER" format A8 SQL> column username format a10
+SQL> column MACHINE format A8
+SQL> column PROGRAM format A30
+SQL> SELECT SERVER, SUBSTR(USERNAME,1,15) "USERNAME", SUBSTR(OSUSER,1,8) "OS USER", SUBSTR(MACHINE,1,7)
+"MACHINE",
+SUBSTR(PROGRAM,1,35) "PROGRAM" FROM V$SESSION
+WHERE TYPE='USER';
+$ . oraenv
+$ sqlplus system/password@C_ORCLCDB
+SQL> SELECT SERVER, SUBSTR(USERNAME,1,15) "USERNAME",
+SUBSTR(OSUSER,1,8) "OS USER", SUBSTR(MACHINE,1,7) "MACHINE",
+SUBSTR(PROGRAM,1,35) "PROGRAM" FROM V$SESSION
+WHERE TYPE='USER';
+$ . oraenv
+$ sqlplus system/password@C_ORCLCDB
+SQL> SELECT SERVER, SUBSTR(USERNAME,1,15) "USERNAME",
+SUBSTR(OSUSER,1,8) "OS USER", SUBSTR(MACHINE,1,7) "MACHINE",
+SUBSTR(PROGRAM,1,35) "PROGRAM" FROM V$SESSION
+WHERE TYPE='USER';
+SQL> col "QUEUE" format a12
+SQL> select saddr, circuit, dispatcher, server,
+SUBSTR(QUEUE,1,8) "QUEUE", waiter from v$circuit;
+#4.	Shut down Connection Manager. In a terminal 1 with oraenv set to client, use the cmctl shutdown command.
+$ . oraenv
+$ cmctl
+CMCTL> admin cman_localhost
+CMCTL:cman_localhost> shutdown
+CMCTL:cman_localhost> exit
+

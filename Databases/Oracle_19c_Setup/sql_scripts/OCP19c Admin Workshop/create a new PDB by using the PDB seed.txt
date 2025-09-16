@@ -1,0 +1,132 @@
+#In this practice, you will create a pluggable database (PDB) from the PDB seed in orclcdb by using SQL*Plus.
+$ . oraenv
+$ /home/oracle/labs/DBMod_PDBs/setup_tns.sh
+$ sqlplus / as sysdba
+SQL> CREATE PLUGGABLE DATABASE orclpdb3
+ADMIN USER pdb3_admin IDENTIFIED BY password
+ROLES=(CONNECT)
+CREATE_FILE_DEST='/u01/app/oracle/oradata';
+SQL> column pdb_name format a16
+SQL> select pdb_id, pdb_name, status from cdb_pdbs;
+SQL> alter pluggable database orclpdb3 open;
+SQL> select pdb_id, pdb_name, status from cdb_pdbs;
+$ netmgr
+c.	Click the plus sign.
+d.	Enter Net Service Name: PDB3, and click Next.
+e.	Select TCP/IP (Internet Protocol), and click Next.
+f.	Enter Host Name: localhost, verify the Port Number is 1521, and click Next.
+g.	Enter Service Name: ORCLPDB3
+h.	For Connection Type, select Dedicated Server and click Next.
+i.	Click Finish.
+j.	Click File>Save Network Configuration.
+k.	Click File>Exit.
+$ sqlplus system@PDB3
+SQL> select name from v$datafile;
+SQL> col name format a15
+SQL> select name from v$services;
+
+#In these practices, you will create PDBs by using various methods.
+ #•	Cloning a regular PDB in hot mode and with automatic refreshing
+ #•	Relocating a PDB
+
+#In this practice, because you have been informed of performance issues on the PDB_SOURCE_FOR_HOTCLONE PDB in ORCL, you will clone the PDB in hot mode as the pdb_HOTCLONE PDB in the CDBTEST test instance for performance tests. The remote PDB_SOURCE_FOR_HOTCLONE production PDB in ORCLCDB will still be up and fully functional while the actual clone operation is taking place. At the end of the practice, you will create a refreshable copy, refreshed manually or automatically, which will allow you to take your time to test the performance issue.
+$ . oraenv
+$ sqlplus / as sysdba
+SQL> grant create pluggable database to SYSTEM container = all;
+$ sqlplus system@pdb_source_for_hotclone
+SQL> set sqlprompt "ORCLCDB> "
+ORCLCDB> select distinct label from source_user.bigtab;
+
+ORCLCDB> UPDATE source_user.bigtab SET label='DATA';
+$ mkdir -p /u01/app/oracle/oradata/CDBTEST/pdb_hotclone
+$ . oraenv
+$ sqlplus / as sysdba
+SQL> SET sqlprompt "CDBTEST> "
+CDBTEST> DROP PUBLIC DATABASE LINK link_pdb_source_for_hotclone;
+CDBTEST> CREATE PUBLIC DATABASE LINK
+link_pdb_source_for_hotclone
+CONNECT TO system IDENTIFIED BY password
+USING 'pdb_source_for_hotclone';
+CDBTEST> ALTER SESSION SET db_create_file_dest= '/u01/app/oracle/oradata/CDBTEST/pdb_hotclone';
+CDBTEST> CREATE PLUGGABLE DATABASE pdb_hotclone
+FROM pdb_source_for_hotclone@link_pdb_source_for_hotclone FILE_NAME_CONVERT=
+('/u01/app/oracle/oradata/ORCLCDB/pdb_source_for_hotclone', '/u01/app/oracle/oradata/CDBTEST/pdb_hotclone')
+REFRESH MODE MANUAL;
+CDBTEST> ALTER PLUGGABLE DATABASE pdb_hotclone OPEN READ ONLY;
+CDBTEST> ALTER SESSION SET container = pdb_hotclone;
+CDBTEST> select distinct label from source_user.bigtab; 
+CDBTEST> select count(*) from source_user.bigtab;
+ORCLCDB> commit; 
+ORCLCDB> select distinct label from source_user.bigtab;
+CDBTEST> alter pluggable database pdb_hotclone refresh;
+CDBTEST> ALTER PLUGGABLE DATABASE pdb_hotclone CLOSE;
+CDBTEST> ALTER PLUGGABLE DATABASE pdb_hotclone REFRESH;
+Pluggable database altered.
+CDBTEST> ALTER PLUGGABLE DATABASE pdb_hotclone OPEN READ ONLY;
+CDBTEST> select distinct label from source_user.bigtab;
+CDBTEST> ALTER PLUGGABLE DATABASE pdb_hotclone CLOSE;
+CDBTEST> ALTER SESSION SET container = CDB$ROOT;
+CDBTEST> select pdb_name, status from cdb_pdbs;
+CDBTEST> DROP PLUGGABLE DATABASE pdb_hotclone INCLUDING DATAFILES;
+CDBTEST> CREATE PLUGGABLE DATABASE pdb_hotclone
+FROM pdb_source_for_hotclone@link_pdb_source_for_hotclone FILE_NAME_CONVERT=
+('/u01/app/oracle/oradata/ORCLCDB/pdb_source_for_hotclone',
+'/u01/app/oracle/oradata/CDBTEST/pdb_hotclone') REFRESH MODE every 2 minutes;
+ORCLCDB> UPDATE source_user.bigtab SET label='DATA2';
+ORCLCDB> commit; 
+ORCLCDB> select distinct label from source_user.bigtab;
+ORCLCDB> exit
+CDBTEST> ALTER SESSION SET container = pdb_hotclone;
+CDBTEST> ALTER PLUGGABLE DATABASE pdb_hotclone OPEN READ ONLY;
+CDBTEST> select distinct label from source_user.bigtab;
+CDBTEST> ALTER PLUGGABLE DATABASE pdb_hotclone CLOSE;
+CDBTEST> ! sleep 120
+CDBTEST> ALTER PLUGGABLE DATABASE pdb_hotclone OPEN READ ONLY;
+CDBTEST> SELECT DISTINCT label FROM source_user.bigtab; 
+$ $HOME/labs/DBMod_PDBs/cleanup_hotclones.sh
+
+#Relocating PDBs
+#In this practice, you will move PDB1 from ORCLCDB into CDBTEST in one step, using the Near-zero Downtime PDB Relocation feature.
+#	It is assumed that the database and listener are running. You can use the pgrep -lf smon command to verify that the database is started and the pgrep -lf tns command to verify that the listener is started. If you need to restart the database and listener, use the dbstart.sh script.
+$ . oraenv
+ORACLE_SID = [orclcdb] ? orclcdb
+$ sqlplus / AS SYSDBA
+SQL> SET sqlprompt "ORCLCDB1> "
+ORCLCDB1> SELECT property_name, property_value FROM	database_properties
+WHERE property_name = 'LOCAL_UNDO_ENABLED';
+ORCLCDB1 > connect test@pdb3 
+ORCLCDB1> select label, count(*) from test.bigtab group by label;
+ORCLCDB1 > connect / as sysdba
+ORCLCDB1 > create public database link link_cdbtest connect to system identified by password using 'CDBTEST';
+ORCLCDB1 > show pdbs
+ORCLCDB1> alter pluggable database all open;
+ORCLCDB1> show pdbs
+$ . oraenv
+ORACLE_SID = [orclcdb] ? CDBTEST
+SQL> set sqlprompt "CDBTEST> "
+CDBTEST> create public database link link_orclcdb connect to system identified by password using 'ORCLCDB';
+CDBTEST> ! mkdir –p
+/u01/app/oracle/oradata/CDBTEST/pdb_relocated
+
+CDBTEST> create pluggable database pdb_relocated
+from orclpdb3@link_orclcdb relocate file_name_convert=
+('/u01/app/oracle/oradata/ORCLCDB/orclpdb3', '/u01/app/oracle/oradata/CDBTEST/pdb_relocated');
+ORCLCDB1> grant sysoper to system container=all;
+CDBTEST> select pdb_name, status from cdb_pdbs;
+ORCLCDB1> select pdb_name, status from cdb_pdbs;
+CDBTEST> alter pluggable database pdb_relocated open read only; 
+CDBTEST> alter session set container = pdb_relocated;
+CDBTEST> select label, count(*) from test.bigtab group by label;
+CDBTEST> alter session set container = cdb$root;
+CDBTEST> alter pluggable database pdb_relocated
+CDBTEST> alter session set container = pdb_relocated;
+CDBTEST> select label, count(*) from test.bigtab group by label;
+CDBTEST> select pdb_name, status from cdb_pdbs;
+ORCLCDB1> select pdb_name, status from cdb_pdbs;
+CDBTEST> alter session set container = cdb$root; 
+CDBTEST> alter pluggable database pdb_relocated close;
+CDBTEST> drop pluggable database pdb_relocated including datafiles;
+CDBTEST> exit
+$ sqlplus / as sysdba
+SQL> revoke sysoper from system container = all;
+
