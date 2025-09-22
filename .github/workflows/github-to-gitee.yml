@@ -18,5 +18,5 @@ jobs:
           git config --global user.name "shenekin"
           git config --global user.email "shenekin@github.com"
           git remote add gitee https://${{ secrets.GITEE_USERNAME }}:${{ secrets.GITEE_SECRET }}@gitee.com/${{ secrets.GITEE_USERNAME }}/os-platform.git
-          git push gitee --all --force
-          git push gitee --tags --force
+          git push --all --force
+          git push --tags --force
