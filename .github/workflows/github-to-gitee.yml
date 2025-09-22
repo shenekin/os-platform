@@ -3,7 +3,7 @@ name: Mirror GitHub → Gitee
 on:
   push:
     branches:
-      - main   # or your default branch
+      - master   # or your default branch
   workflow_dispatch: # manual trigger option
 
 jobs:
