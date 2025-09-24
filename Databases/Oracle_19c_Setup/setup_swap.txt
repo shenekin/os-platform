@@ -1,0 +1,67 @@
+#!/bin/sh
+# Script to create swap space interactively with memory check
+# Author: ekin
+
+# =========================
+# Function: Check Memory
+# =========================
+check_memory() {
+    echo "-----------------------------------------"
+    echo "Current Memory Information:"
+    echo "-----------------------------------------"
+    free -h
+    echo ""
+    echo "Details from /proc/meminfo:"
+    grep -E 'MemTotal|SwapTotal' /proc/meminfo
+    echo "-----------------------------------------"
+}
+
+# =========================
+# Start Script
+# =========================
+
+# Show current memory before changes
+check_memory
+
+echo "========================================="
+echo "This script will help you create swap."
+echo "========================================="
+
+# Ask for swap size
+echo -n "Enter swap size (e.g. 2G or 2048M): "
+read SWAPSIZE
+
+# File name
+SWAPFILE=/swapfile
+
+# Confirm
+echo "You are going to create swap: $SWAPSIZE at $SWAPFILE"
+echo -n "Proceed? (y/n): "
+read CONFIRM
+
+if [ "$CONFIRM" != "y" ]; then
+    echo "Aborted."
+    exit 1
+fi
+
+# Create swap file
+echo "Creating swap file..."
+fallocate -l $SWAPSIZE $SWAPFILE 2>/dev/null || dd if=/dev/zero of=$SWAPFILE bs=1M count=$(echo $SWAPSIZE | sed 's/[^0-9]//g')
+
+# Set permissions
+chmod 600 $SWAPFILE
+
+# Make swap
+mkswap $SWAPFILE
+
+# Enable swap
+swapon $SWAPFILE
+
+# Add to fstab if not already there
+if ! grep -q "$SWAPFILE" /etc/fstab; then
+    echo "$SWAPFILE swap swap defaults 0 0" >> /etc/fstab
+fi
+
+echo "========================================="
+echo "Swap $SWAPSIZE created and activated!"
+check_memory

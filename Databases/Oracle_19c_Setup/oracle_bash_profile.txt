@@ -1,11 +1,34 @@
 # Oracle 19c Environment Variables
-export ORACLE_HOME=/opt/oracle/product/19c/dbhome_1
-export ORACLE_SID=ORCL
-export PATH=$PATH:$ORACLE_HOME/bin
-export LD_LIBRARY_PATH=$ORACLE_HOME/lib:$LD_LIBRARY_PATH
-export TNS_ADMIN=$ORACLE_HOME/network/admin
-export NLS_LANG=AMERICAN_AMERICA.AL32UTF8
-export ORA_CRS_HOME=/opt/grid/19c/crs
+
+# Oracle base directories
+export ORACLE_BASE=/u01/app/oracle
+export ORACLE_HOME=$ORACLE_BASE/product/19c/dbhome_1
 export SQLPATH=$ORACLE_HOME/sqlplus/admin
 export TMP=/tmp
 export TMPDIR=/tmp
+
+# Oracle SID (System Identifier)
+export ORACLE_SID=orcl
+
+# Oracle Net Service (Listener TNS)
+export ORACLE_UNQNAME=$ORACLE_SID
+export TNS_ADMIN=$ORACLE_HOME/network/admin
+
+# Path settings
+export PATH=$ORACLE_HOME/bin:$ORACLE_HOME/OPatch:$PATH
+export LD_LIBRARY_PATH=$ORACLE_HOME/lib:/lib:/usr/lib
+export CLASSPATH=$ORACLE_HOME/jlib:$ORACLE_HOME/rdbms/jlib
+
+# Java for Oracle tools (e.g., DBCA, NetCA)
+export JAVA_HOME=$ORACLE_HOME/jdk
+export PATH=$JAVA_HOME/bin:$PATH
+
+# Character set (optional, for multi-language DB support)
+export NLS_LANG=AMERICAN_AMERICA.AL32UTF8
+
+# SQL*Plus prompt (useful for multiple DBs)
+export SQLPROMPT='[_USER"@"_CONNECT_IDENTIFIER]> '
+
+# History control (long commands)
+export HISTSIZE=10000
+export HISTFILESIZE=20000
