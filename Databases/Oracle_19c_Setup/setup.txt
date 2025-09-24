@@ -1,93 +1,38 @@
-1. ?? Oracle 19c ???(??? Oracle ??)
-??: https://www.oracle.com/database/technologies/oracle19c-linux-downloads.html
-https://docs.oracle.com/en/database/oracle/index.html
-
-???: LINUX.X64_193000_db_home.zip
-
-2. ???? $ORACLE_HOME
-su - oracle
-export ORACLE_HOME=/u01/app/oracle/product/19.3.0/dbhome_1
-unzip LINUX.X64_193000_db_home.zip -d $ORACLE_HOME
-
-???? Oracle ??
-1. ?????? .bash_profile
-cat >> ~/.bash_profile <<EOF
-export ORACLE_BASE=/u01/app/oracle
-export ORACLE_HOME=$ORACLE_BASE/product/19.3.0/dbhome_1
-export ORACLE_SID=orcl
-export PATH=$ORACLE_HOME/bin:$PATH
-EOF
-
-source ~/.bash_profile
-
-2. Install GNOME
-sudo yum group list
-sudo yum groupinstall "GNOME Desktop" -y
-sudo systemctl set-default graphical.target
-sudo reboot
-
-
-cd $ORACLE_HOME
+cd /u01/app/oracle/product/19c/dbhome_1
+unzip LINUX.X64_193000_db_home.zip
 ./runInstaller
+Choose “Set Up Software Only” if you just want to install binaries now.
 
-??“Set Up Software Only” ? “Create and Configure a Single Instance Database”
+Choose Single instance database installation.
 
-?????? root ?????????:
+Select languages & edition (usually Enterprise Edition).
 
-# ??
-sh /u01/app/oraInventory/orainstRoot.sh
-sh /u01/app/oracle/product/19.3.0/dbhome_1/root.sh
+Accept default Oracle Base (/u01/app/oracle) and Oracle Home (/u01/app/oracle/product/19c/dbhome_1).
 
- ???????????
-1. ?? netca ?????
-netca
-2. ?? dbca ?????
-dbca
+Run prerequisite checks.
+
+Continue installation.
 
 
-
-SID:orcl
-
-
+sudo /u01/app/oraInventory/orainstRoot.sh
+sudo /u01/app/oracle/product/19c/dbhome_1/root.sh
 
 
-bash
-Copy
-Edit
-lsnrctl start
-sqlplus / as sysdba
-SQL> startup;
+./runInstaller -silent -responseFile $ORACLE_HOME/install/response/db_install.rsp \
+oracle.install.option=INSTALL_DB_SWONLY \
+UNIX_GROUP_NAME=oinstall \
+INVENTORY_LOCATION=/u01/app/oraInventory \
+ORACLE_BASE=/u01/app/oracle \
+ORACLE_HOME=/u01/app/oracle/product/19c/dbhome_1 \
+oracle.install.db.InstallEdition=EE \
+oracle.install.db.OSDBA_GROUP=dba \
+oracle.install.db.OSOPER_GROUP=oper \
+oracle.install.db.OSBACKUPDBA_GROUP=dba \
+oracle.install.db.OSDGDBA_GROUP=dba \
+oracle.install.db.OSKMDBA_GROUP=dba \
+oracle.install.db.OSRACDBA_GROUP=dba \
+DECLINE_SECURITY_UPDATES=true
 
-sql
-Copy
-Edit
-SQL> select name, open_mode from v$database;
 
-(CentOS)
-rc.local ? systemd 
 
-#######################################################################################################
-#######################################################################################################
-new env of oracle user
-
-# .bash_profile
-
-# Get the aliases and functions
-if [ -f ~/.bashrc ]; then
-	. ~/.bashrc
-fi
-
-# User specific environment and startup programs
-
-PATH=$PATH:$HOME/.local/bin:$HOME/bin
-
-export PATH
-# Oracle 19c Environment Variables
-export ORACLE_HOME=/u01/app/oracle/product/19/db_1
-export ORACLE_SID=orcl
-export ORACLE_UNQNAME=orcl
-export ORACLE_BASE=/u01/app/oracle
-export PATH=/usr/sbin:$PATH
-export PATH=$ORACLE_HOME/bin:$PATH
-export ORACLE_HOSTNAME=oracle19c
-export TNS_ADMIN=$ORACLE_HOME/network/admin
+$ORACLE_HOME/bin/sqlplus -v
