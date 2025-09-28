@@ -24,6 +24,7 @@ passwd oracle
 4. Directory Structure
 mkdir -p /or01/app/oracle/product/19c/dbhome_1
 mkdir -p /or01/app/oraInventory
+mkdir -p /or01/app/oradata
 chown -R oracle:oinstall /or01/app
 chmod -R 775 /or01/app
 
