@@ -1,6 +1,8 @@
 #This is only for Root user
 1. SELinux
 hostnamectl set-hostname ord1
+cat >> /etc/hosts <<EOF
+172.16.0.48  ord01
 systemctl stop firewalld
 systemctl disable firewalld
 setenforce 0
