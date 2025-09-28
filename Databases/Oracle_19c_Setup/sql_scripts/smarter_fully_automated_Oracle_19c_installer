@@ -48,16 +48,16 @@ export INSTANCE_LIST=()              # Leave empty to auto-generate
 export ISTENER_PORT=1560
 export TABLESPACES=("USERS:100M" "DATA:500M")
 export PROFILE_FILE="/home/$ORACLE_USER/.bash_profile"
-
+export DB_PASSWORD="oracle19c"
 # -------------------------
 # Function: Check prerequisites
 # -------------------------
 echo "Checking prerequisites..."
 REQUIRED_PKGS=(unzip libaio bc elfutils-libelf)
 for PKG in "${REQUIRED_PKGS[@]}"; do
-    if ! rpm -q $PKG &>/dev/null; then
+    if ! rpm -q "$PKG" &>/dev/null; then
         echo "Installing missing package: $PKG"
-        yum install -y $PKG
+        yum install -y "$PKG"
     fi
 done
 
@@ -69,7 +69,7 @@ mkdir -p $ORACLE_HOME
 # -------------------------
 TOTAL_MEM_MB=$(free -m | awk '/Mem:/ {print $2}')
 # Allocate 40% of total memory if small server, max 8GB
-if [ $TOTAL_MEM_MB -lt 16000 ]; then
+if [ "$TOTAL_MEM_MB" -lt 16000 ]; then
     DB_MEMORY_PERCENT=40
 else
     DB_MEMORY_PERCENT=60
@@ -120,19 +120,19 @@ export INSTANCE_LIST=()              # Leave empty to auto-generate
 export ISTENER_PORT=1560
 export TABLESPACES=("USERS:100M" "DATA:500M")
 EOF
-source $PROFILE_FILE
+source PROFILE_FILE
 
 # -------------------------
 # Extract Oracle installation files
 # -------------------------
 echo "Extracting Oracle installation files..."
-mkdir -p $TMP_DIR
-unzip -q $INSTALL_ZIP_PATH -d $TMP_DIR
+mkdir -p $TMPDIR
+unzip -q $INSTALL_ZIP_PATH -d $TMPDIR
 
 # -------------------------
 # Generate runInstaller response file
 # -------------------------
-RESPONSE_FILE="$TMP_DIR/db_install.rsp"
+RESPONSE_FILE="$TMPDIR/db_install.rsp"
 cat > $RESPONSE_FILE <<EOF
 oracle.install.option=INSTALL_DB_SWONLY
 ORACLE_HOSTNAME=$(hostname -f)
@@ -150,7 +150,7 @@ EOF
 # Run runInstaller as Oracle user
 # -------------------------
 echo "Starting Oracle software installation..."
-su - $ORACLE_USER -c "$TMP_DIR/runInstaller -silent -responseFile $RESPONSE_FILE -ignorePrereq -waitforcompletion"
+su - $ORACLE_USER -c "$TMPDIR/runInstaller -silent -responseFile $RESPONSE_FILE -ignorePrereq -waitforcompletion"
 
 # -------------------------
 # Execute root scripts
@@ -167,7 +167,7 @@ cat > $ORACLE_HOME/network/admin/listener.ora <<EOF
 LISTENER =
   (DESCRIPTION_LIST =
     (DESCRIPTION =
-      (ADDRESS = (PROTOCOL = TCP)(HOST = $(hostname -f))(PORT = $LISTENER_PORT))
+      (ADDRESS = (PROTOCOL = TCP)(HOST = $(hostname -f))(PORT = $ISTENER_PORT))
     )
   )
 EOF
@@ -181,11 +181,11 @@ lsnrctl status
 # -------------------------
 for SID in "${INSTANCE_LIST[@]}"; do
     echo "Creating database instance: $SID"
-    export ORACLE_SID=$SID
+    export ORACLE_SID=$ORACLE_SID
     dbca -silent -createDatabase \
         -templateName General_Purpose.dbc \
-        -gdbname $SID \
-        -sid $SID \
+        -gdbname $ORACLE_SID \
+        -sid $ORACLE_SID \
         -responseFile NO_VALUE \
         -characterSet AL32UTF8 \
         -memoryPercentage $DB_MEMORY_PERCENT \
@@ -199,8 +199,8 @@ for SID in "${INSTANCE_LIST[@]}"; do
 
     # Auto-create tablespaces
     for TS in "${TABLESPACES[@]}"; do
-        NAME=$(echo $TS | cut -d: -f1)
-        SIZE=$(echo $TS | cut -d: -f2)
+        NAME=$(echo "$TS" | cut -d: -f1)
+        SIZE=$(echo "$TS" | cut -d: -f2)
         sqlplus / as sysdba <<SQL
 CREATE TABLESPACE $NAME DATAFILE '$ORACLE_BASE/oradata/$SID/${NAME}.dbf' SIZE $SIZE AUTOEXTEND ON NEXT 50M MAXSIZE UNLIMITED;
 SQL
