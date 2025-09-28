@@ -86,6 +86,7 @@ fi
 echo "Configuring environment variables..."
 cat >> $PROFILE_FILE <<EOF
 export ORACLE_BASE=/or01/app
+export ORACLE_HOME=$ORACLE_BASE/oracle/product/19c/dbhome_1
 export SQLPATH=$ORACLE_HOME/sqlplus/admin
 # Oracle SID (System Identifier)
 export ORACLE_SID=ord1
