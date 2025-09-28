@@ -21,7 +21,7 @@ export ORACLE_HOME=$ORACLE_BASE/oracle/product/19c/dbhome_1
 export SQLPATH=$ORACLE_HOME/sqlplus/admin
 # Oracle SID (System Identifier)
 export ORACLE_SID=ord1
-export $TMPDIR=tmp
+export TMPDIR=/tmp
 # Oracle Net Service (Listener TNS)
 export ORACLE_UNQNAME=$ORACLE_SID
 export TNS_ADMIN=$ORACLE_HOME/network/admin
@@ -60,9 +60,6 @@ for PKG in "${REQUIRED_PKGS[@]}"; do
     fi
 done
 
-mkdir -p $ORACLE_BASE/oraInventory/
-mkdir -p $ORACLE_BASE/oradata
-mkdir -p $ORACLE_HOME
 
 # -------------------------
 # Detect system RAM and calculate DB memory percentage
@@ -113,9 +110,9 @@ export DBA_GROUP="dba"
 export INSTANCE_LIST=()              # Leave empty to auto-generate
 export ISTENER_PORT=1560
 export TABLESPACES=("USERS:100M" "DATA:500M")
-export $TMPDIR=tmp
+export TMPDIR=/tmp
 EOF
-source PROFILE_FILE
+source $PROFILE_FILE
 
 # -------------------------
 # Extract Oracle installation files
