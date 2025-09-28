@@ -2,7 +2,8 @@
 1. SELinux
 hostnamectl set-hostname ord1
 cat >> /etc/hosts <<EOF
-172.16.0.48  ord01
+172.16.0.48  ord1
+EOF
 systemctl stop firewalld
 systemctl disable firewalld
 setenforce 0
