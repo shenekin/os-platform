@@ -1,5 +1,6 @@
 #This is only for Root user
 1. SELinux
+hostnamectl set-hostname ord1
 systemctl stop firewalld
 systemctl disable firewalld
 setenforce 0
