@@ -1,0 +1,25 @@
+ docker run --name redis-container -d redis:5
+ docker logs redis-container
+ docker exec -it redis-container redis-cli
+ docker run --name mysql-container -e MYSQL_ROOT_PASSWORD=1qaz@WSX -d mysql:8.0
+ docker exec -it mysql-container mysql -uroot -p
+ mkdir  /data_storge
+ sudo mkdir  /data_storge
+ mkdir  /data_storge/redis_5
+  sudo mkdir  /data_storge/redis_5
+ sudo mkdir  /data_storge/mysql_8
+ docker run --name redis-container -d -v //data_storge/redis_5:/data redis:5
+ docker run --name redis-container -d -v /data_storge/redis_5:/data redis:5
+ docker ps
+  mysql -h 127.0.0.1 -P 3306 -uroot -p
+ sudo apt install mysql-client-core-8.0
+ mysql -h 127.0.0.1 -P 3306 -uroot -p
+  docker exec -it mysql-container bash
+  mysql -h 127.0.0.1 -P 3306 -uroot -p
+ docker exec -it redis-container bash
+redis-cli
+ sudo apt install redis-tools
+ redis-cli
+docker exec -it redis-container bash
+redis-cli -h 127.0.0.1 -p 6379
+
