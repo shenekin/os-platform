@@ -1,5 +1,7 @@
 install daily software (on ubuntu 24)
 
+wechat
+
 
 该方法适合已安装 Linux 版微信（通常是 4.0 及以上版本）的情况，核心是删除微信的进程锁定文件，让系统可重复启动微信实例。操作步骤如下：
 
