@@ -20,4 +20,88 @@ fi
 /usr/bin/wechat %U
 
     保存后给脚本加执行权限：chmod +x wechat-multi.sh，之后双击脚本或终端执行./wechat-multi.sh，就能快速启动新的微信实例。
+    
+    
+    
+vault_cfg = load_vault_config("/developer/ecs_batch_platform/valut/vault.yaml")
+secrets = VaultSecretManager(vault_cfg)
+
+# Store new credentials
+secrets.store_external_ak_sk(
+    ak="NEW_ACCESS_KEY_123",
+    sk="NEW_SECRET_KEY_456",
+)
+
+# Read back
+creds = secrets.get_external_ak_sk()
+print(creds["ak"], creds["sk"])
+
+
+
+
+office
+LibreOffice is free and comes pre-installed on many Linux distros.
+
+sudo apt update
+sudo apt install libreoffice
+sudo snap install onlyoffice-desktopeditors
+
+Install vscode
+
+sudo snap install code --classic
+code
+
+sudo apt install ./<path-to-downloaded-deb-file>
+
+install good wubi and pingyin
+sudo apt update
+sudo apt install fcitx5 fcitx5-chinese-addons fcitx5-configtool
+   fcitx5-chinese-addons includes Pinyin, Wubi, Zhuyin, etc.
+    fcitx5-configtool is the GUI for configuration.
+
+    Step 2: Set Fcitx as Default Input Method
+
+    Open Settings → Region & Language → Input Method.
+
+   Choose Fcitx as the input method system.
+
+   Log out and log back in (or restart Ubuntu) to apply.
+
+   Step 3: Configure Fcitx
+
+   Open Fcitx Configuration (fcitx5-configtool).
+
+  Click + → choose your language:
+
+   Chinese (Pinyin) for Pinyin input.
+
+   Chinese (Wubi) for Wubi input.
+
+  Adjust hotkey for switching input methods (default is Ctrl + Space).
+
+  Step 4: Switch Between Input Methods
+
+  Use Ctrl + Space (or your configured hotkey) to toggle between English and Chinese input.
+
+  Start typing in any text field: Pinyin or Wubi will work.
+ 
+ 
+ Option 2: Using IBus (Alternative)
+    sudo apt install ibus ibus-pinyin ibus-table-wubi
+
+
+
+install mp4 on ubuntu 24
+	1. Install a Media Player
+
+	sudo apt update
+	sudo apt install vlc -y
+        sudo apt install ubuntu-restricted-extras -y
+
+Optional: Convert or Edit MP4
+       sudo apt install ffmpeg -y
+       ffmpeg -i input.mp4 output.avi
+
+	
+  
 
