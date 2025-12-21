@@ -1,0 +1,258 @@
+
+
+---
+
+## 1️⃣ Install system dependencies (Ubuntu 24.04)
+
+These are **required**, otherwise Python builds will fail.
+
+```bash
+sudo apt update
+sudo apt install -y \
+  build-essential \
+  curl \
+  git \
+  libssl-dev \
+  zlib1g-dev \
+  libbz2-dev \
+  libreadline-dev \
+  libsqlite3-dev \
+  llvm \
+  libncursesw5-dev \
+  xz-utils \
+  tk-dev \
+  libxml2-dev \
+  libxmlsec1-dev \
+  libffi-dev \
+  liblzma-dev
+```
+
+---
+
+## 2️⃣ Install pyenv
+
+### Recommended: official installer
+
+```bash
+curl https://pyenv.run | bash
+```
+
+This installs:
+
+* `pyenv`
+* `pyenv-virtualenv`
+* `pyenv-update`
+
+---
+
+## 3️⃣ Configure shell (⚠️ REQUIRED)
+
+### For **bash**
+
+```bash
+nano ~/.bashrc
+```
+
+Add **at the bottom**:
+
+```bash
+export PYENV_ROOT="$HOME/.pyenv"
+export PATH="$PYENV_ROOT/bin:$PATH"
+
+eval "$(pyenv init --path)"
+eval "$(pyenv init -)"
+eval "$(pyenv virtualenv-init -)"
+```
+
+Apply:
+
+```bash
+source ~/.bashrc
+```
+
+---
+
+### For **zsh** (if using oh-my-zsh)
+
+```bash
+nano ~/.zshrc
+```
+
+Add:
+
+```bash
+export PYENV_ROOT="$HOME/.pyenv"
+export PATH="$PYENV_ROOT/bin:$PATH"
+
+eval "$(pyenv init --path)"
+eval "$(pyenv init -)"
+eval "$(pyenv virtualenv-init -)"
+```
+
+Apply:
+
+```bash
+source ~/.zshrc
+```
+
+---
+
+## 4️⃣ Verify installation
+
+```bash
+pyenv --version
+```
+
+✅ Expected:
+
+```
+pyenv 2.x.x
+```
+
+---
+
+## 5️⃣ Install Python versions
+
+### List available versions
+
+```bash
+pyenv install --list
+```
+
+### Install common versions
+
+```bash
+pyenv install 3.10.14
+pyenv install 3.11.9
+pyenv install 3.12.3
+```
+
+⚠️ Python 3.12 works fine on Ubuntu 24.04 with the deps above.
+
+---
+
+## 6️⃣ Set Python version
+
+### Global (system-wide for user)
+
+```bash
+pyenv global 3.11.9
+```
+
+### Per-project (recommended)
+
+```bash
+cd your_project
+pyenv local 3.11.9
+```
+
+Creates:
+
+```
+.python-version
+```
+
+---
+
+## 7️⃣ Verify Python source
+
+```bash
+which python
+```
+
+Expected:
+
+```
+~/.pyenv/shims/python
+```
+
+```bash
+python --version
+```
+
+---
+
+## 8️⃣ Use pyenv + virtualenv (BEST PRACTICE)
+
+### Create virtual environment
+
+```bash
+pyenv virtualenv 3.11.9 myenv
+```
+
+### Activate
+
+```bash
+pyenv activate myenv
+```
+
+### Deactivate
+
+```bash
+pyenv deactivate
+```
+
+### Per-project auto-activate
+
+```bash
+pyenv local myenv
+```
+
+---
+
+## 9️⃣ Common issues & fixes
+
+### ❌ `pyenv: command not found`
+
+➡️ Shell not configured
+✔️ Re-run `source ~/.bashrc` or restart terminal
+
+---
+
+### ❌ Python build failed
+
+➡️ Missing libs
+✔️ Reinstall deps:
+
+```bash
+sudo apt install --reinstall libssl-dev zlib1g-dev libbz2-dev libreadline-dev libsqlite3-dev
+```
+
+---
+
+### ❌ pyenv ignored, system python used
+
+➡️ PATH order wrong
+✔️ Ensure `.pyenv/bin` is **before** `/usr/bin`
+
+Check:
+
+```bash
+echo $PATH
+```
+
+---
+
+## 10️⃣ Recommended setup (your use case)
+
+Given your background (Python tooling, cloud platforms, microservices):
+
+✔️ **pyenv + pyenv-virtualenv**
+✔️ **One Python per project**
+✔️ Avoid system Python entirely
+✔️ Combine with:
+
+* `pipx` (CLI tools)
+* `poetry` or `pip-tools` (dependency lock)
+
+---
+
+If you want, I can next help you with:
+
+* ✅ pyenv + **Poetry** best setup
+* ✅ pyenv inside **Docker**
+* ✅ pyenv for **CI/CD**
+* ✅ Migrating existing projects to pyenv
+
+Just tell me 👍
+
