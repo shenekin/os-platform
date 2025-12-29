@@ -1,0 +1,38 @@
+version: "3.9"
+
+services:
+  mysql:
+    image: mysql:8.0
+    container_name: mysql
+    environment:
+      MYSQL_ROOT_PASSWORD: root123
+      MYSQL_DATABASE: nacos_config
+      MYSQL_USER: nacos
+      MYSQL_PASSWORD: nacos123
+    ports:
+      - "63306:3306"
+    networks:
+      - dev-net
+
+  nacos:
+    image: nacos/nacos-server:v2.3.2
+    container_name: nacos
+    environment:
+      MODE: standalone
+      MYSQL_SERVICE_HOST: mysql
+      MYSQL_SERVICE_DB_NAME: nacos_config
+      MYSQL_SERVICE_PORT: 3306
+      MYSQL_SERVICE_USER: nacos
+      MYSQL_SERVICE_PASSWORD: nacos123
+    depends_on:
+      - mysql
+    ports:
+      - "8848:8848"
+      - "9848:9848"
+    networks:
+      - dev-net
+
+networks:
+  dev-net:
+    driver: bridge
+

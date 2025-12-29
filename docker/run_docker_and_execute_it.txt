@@ -253,9 +253,9 @@ If you want to use a graphical client like **MySQL Workbench** or another MySQL 
    As mentioned earlier, you need to expose the port `3306` when you run the container:
 
    ```bash
-   docker run --name mysql-container -e MYSQL_ROOT_PASSWORD=my-secret-pw -d -p 3306:3306 mysql:8.0
+   docker run --name mysql-container --network auth-network  -e MYSQL_ROOT_PASSWORD=my-secret-pw -d -p 3306:3306 mysql:8.0
    ```
-docker run --name mysql-container -e MYSQL_ROOT_PASSWORD=1qaz@WSX -d -w /data_storge/mysql_8/:/data -p 3306:3306 mysql:8.0
+docker run --name mysql-container --network dev-net -e MYSQL_ROOT_PASSWORD=1qaz@WSX -d -w /data_storge/mysql_8/:/data -p 3306:3306 mysql:8.0
 2. **Configure MySQL Workbench**:
    Open **MySQL Workbench** or any MySQL GUI client, and configure the connection using the following details:
 
@@ -287,7 +287,8 @@ If you have trouble connecting, here are a few things to check:
 1. **Inside the container**:
 
    ```bash
-   docker exec -it mysql-container mysql -uroot -p
+   docker exec -it mysql-container --network auth-network mysql -uroot -p
+   
    ```
 
 2. **From the host machine** (if port is exposed):

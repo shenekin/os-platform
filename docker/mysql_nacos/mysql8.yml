@@ -1,0 +1,13 @@
+services:
+  mysql:
+    image: mysql:8.0
+    container_name: mysql
+    environment:
+      MYSQL_ROOT_PASSWORD: root123
+      MYSQL_DATABASE: nacos_config
+      MYSQL_USER: nacos
+      MYSQL_PASSWORD: nacos123
+    ports:
+      - "63306:63306"
+    networks:
+      - dev-net

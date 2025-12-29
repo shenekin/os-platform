@@ -1,0 +1,24 @@
+services:
+  nacos:
+    image: nacos/nacos-server:v2.3.2
+    container_name: nacos
+    environment:
+      MODE: standalone
+      PREFER_HOST_MODE: hostname
+    ports:
+      - "8848:8848"
+      - "9848:9848"
+
+
+  jaeger:
+    image: jaegertracing/all-in-one:1.54
+    container_name: jaeger
+    ports:
+      - "16686:16686"
+      - "4318:4318"
+    networks:
+      - dev-net 
+
+networks:
+  dev-net:
+
