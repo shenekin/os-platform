@@ -1,0 +1,17 @@
+dbca -silent -createDatabase \
+  -gdbName orcl \
+  -templateName General_Purpose.dbc \
+  -createAsContainerDatabase true \
+  -numberOfPDBs 1 \
+  -pdbName pdb1 \
+  -createListener LISTENER:1521 \
+  -sysPassword oracle19c \
+  -systemPassword oracle19c \
+  -pdbAdminPassword oracle19c \
+  -datafileDestination /u01/app/oracle/oradata \
+  -automaticMemoryManagement true \
+  -storageType FS \
+  -characterSet AL32UTF8 \
+  -nationalCharacterSet AL16UTF16 \
+  -databaseType MULTIPURPOSE \
+  -emConfiguration NONE

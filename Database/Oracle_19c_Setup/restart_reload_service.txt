@@ -1,0 +1,3 @@
+systemctl daemon-reload
+systemctl enable oracle.service
+systemctl start oracle.service

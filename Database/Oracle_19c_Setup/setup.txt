@@ -1,0 +1,38 @@
+cd /u01/app/oracle/product/19c/dbhome_1
+unzip LINUX.X64_193000_db_home.zip
+./runInstaller
+Choose “Set Up Software Only” if you just want to install binaries now.
+
+Choose Single instance database installation.
+
+Select languages & edition (usually Enterprise Edition).
+
+Accept default Oracle Base (/u01/app/oracle) and Oracle Home (/u01/app/oracle/product/19c/dbhome_1).
+
+Run prerequisite checks.
+
+Continue installation.
+
+
+sudo /u01/app/oraInventory/orainstRoot.sh
+sudo /u01/app/oracle/product/19c/dbhome_1/root.sh
+
+
+./runInstaller -silent -responseFile $ORACLE_HOME/install/response/db_install.rsp \
+oracle.install.option=INSTALL_DB_SWONLY \
+UNIX_GROUP_NAME=oinstall \
+INVENTORY_LOCATION=/u01/app/oraInventory \
+ORACLE_BASE=/u01/app/oracle \
+ORACLE_HOME=/u01/app/oracle/product/19c/dbhome_1 \
+oracle.install.db.InstallEdition=EE \
+oracle.install.db.OSDBA_GROUP=dba \
+oracle.install.db.OSOPER_GROUP=oper \
+oracle.install.db.OSBACKUPDBA_GROUP=dba \
+oracle.install.db.OSDGDBA_GROUP=dba \
+oracle.install.db.OSKMDBA_GROUP=dba \
+oracle.install.db.OSRACDBA_GROUP=dba \
+DECLINE_SECURITY_UPDATES=true
+
+
+
+$ORACLE_HOME/bin/sqlplus -v

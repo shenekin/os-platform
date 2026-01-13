@@ -1,0 +1,221 @@
+
+---
+
+## 1️⃣ Redis Persistence Basics (What You Need)
+
+Redis supports **two persistence mechanisms**:
+
+### ✅ RDB (Snapshot – default)
+
+
+
+### ✅ AOF (Append Only File – recommended)
+
+* Logs every write operation
+* Much safer for permanent storage
+* Slightly slower, but production-safe
+
+👉 **Best practice:**
+**Enable AOF + keep RDB as backup**
+
+---
+
+## 2️⃣ Directory Layout (Host)
+
+Create persistent directories **on the host**, not inside the container:
+
+```bash
+mkdir -p /data/redis/{data,config}
+```
+
+```
+/data/redis/
+├── data/        # Persistent Redis data
+└── config/
+    └── redis.conf
+```
+
+---
+
+## 3️⃣ Redis 5 Configuration (`redis.conf`)
+
+Create:
+
+```bash
+nano /data/redis/config/redis.conf
+```
+
+### ✅ Minimal Production Redis 5 Config
+
+```conf
+# Bind & Security
+bind 0.0.0.0
+protected-mode yes
+requirepass strong_redis_password
+
+# Data directory
+dir /data
+
+# RDB Persistence
+save 900 1
+save 300 10
+save 60 10000
+dbfilename dump.rdb
+
+# AOF Persistence (IMPORTANT)
+appendonly yes
+appendfilename "appendonly.aof"
+appendfsync everysec
+
+# Rewrite AOF automatically
+auto-aof-rewrite-percentage 100
+auto-aof-rewrite-min-size 64mb
+
+# Memory
+maxmemory 2gb
+maxmemory-policy allkeys-lru
+
+# Logging
+logfile ""
+loglevel notice
+```
+
+📌 **Key points**
+
+* `appendonly yes` → permanent storage
+* `dir /data` → mapped to host volume
+* `appendfsync everysec` → balance safety & performance
+
+---
+
+## 4️⃣ Docker Run (Quick Test)
+
+```bash
+docker run -d \
+  --name redis5 \
+  -p 6379:6379 \
+  -v /data/redis/data:/data \
+  -v /data/redis/config/redis.conf:/usr/local/etc/redis/redis.conf \
+  redis:5 \
+  redis-server /usr/local/etc/redis/redis.conf
+```
+
+---
+
+## 5️⃣ Docker Compose (RECOMMENDED – Production)
+
+### `docker-compose.yml`
+
+```yaml
+version: "3.9"
+
+services:
+  redis:
+    image: redis:5
+    container_name: redis5
+    restart: always
+    ports:
+      - "6379:6379"
+    volumes:
+      - /data/redis/data:/data
+      - /data/redis/config/redis.conf:/usr/local/etc/redis/redis.conf
+    command: ["redis-server", "/usr/local/etc/redis/redis.conf"]
+```
+
+Start it:
+
+```bash
+docker compose up -d
+```
+
+---
+
+## 6️⃣ Verify Persistence (VERY IMPORTANT)
+
+### ① Write data
+
+```bash
+docker exec -it redis5 redis-cli -a strong_redis_password
+SET test_key "persistent_data"
+```
+
+### ② Restart container
+
+```bash
+docker restart redis5
+```
+
+### ③ Check data
+
+```bash
+GET test_key
+```
+
+✅ If you see the value → **persistent storage is working**
+
+---
+
+## 7️⃣ Where Data Is Stored (Host)
+
+```bash
+ls /data/redis/data
+```
+
+You should see:
+
+```
+appendonly.aof
+dump.rdb
+```
+
+📌 These files **survive container deletion**
+
+---
+
+## 8️⃣ Docker 29 Notes (Important)
+
+Docker 29 changes **nothing** about volume persistence, but ensure:
+
+✔ Use **absolute paths**
+✔ Avoid Docker Desktop “tmp volumes”
+✔ Check permissions:
+
+```bash
+chown -R 999:999 /data/redis
+```
+
+(Redis runs as UID `999`)
+
+---
+
+## 9️⃣ Production Hardening (Optional but Recommended)
+
+* Disable `FLUSHALL` in prod
+* Enable Redis AUTH
+* Use Redis Sentinel / Cluster for HA
+* Backup `/data/redis/data` daily
+* Monitor AOF rewrite size
+
+---
+
+## 10️⃣ Quick Summary
+
+| Item          | Value       |
+| ------------- | ----------- |
+| Redis Version | 5           |
+| Persistence   | AOF + RDB   |
+| Docker        | 29          |
+| Storage       | Host volume |
+| Safe for Prod | ✅ YES       |
+
+---
+
+If you want next:
+
+* 🔐 **Redis + TLS**
+* ☸ **Redis on Kubernetes**
+* 📊 **Redis monitoring (Prometheus + Grafana)**
+* 🧱 **Redis Sentinel / Cluster**
+
+Just tell me.
+

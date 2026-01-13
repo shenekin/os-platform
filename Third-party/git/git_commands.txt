@@ -1,0 +1,85 @@
+git config --global user.name "shenekin"
+git config --global user.email "281879341@qq.com"
+
+
+Create git repository:
+
+
+mkdir os-platform
+cd os-platform
+git init 
+touch README.md
+git add README.md
+git commit -m "first commit"
+git remote add origin https://gitee.com/ekinshen/os-platform.git
+git push -u origin "master"
+
+Existing repository?
+cd existing_git_repo
+git remote add origin https://gitee.com/ekinshen/os-platform.git
+git push -u origin "master"
+
+update
+git fetch
+git pull https://gitee.com/ekinshen/os-platform.git
+
+
+1. Commit your changes
+
+If you want to keep your local modifications:
+
+git add .
+git commit -m "my local changes"
+git pull
+
+2. Stash your changes
+
+If you dont want to commit yet, but still want to pull:
+
+git stash
+git pull
+git stash pop   # reapply your changes after pull
+
+3. Discard local changes
+
+Warning: this will remove your uncommitted changes
+
+git reset --hard
+git pull
+
+
+
+你想要把本地位于 `/developer/Cloud_resource_management_system_platform_microservices/Dashbaord_Cloud_resource_management_system` 路径下的 Git 仓库（当前在 dev 分支，工作区已干净）关联到 GitHub 远程仓库 `https://github.com/shenekin/Dashbaord_Cloud_resource_management_system.git`，但误用了 `git add` 命令（该命令用于将文件加入暂存区），导致出现 `pathspec 'remote' did not match any files` 错误。
+
+### 正确操作步骤
+#### 1. 检查当前已关联的远程仓库（可选，确认无重复/错误配置）
+```bash
+git remote -v
+```
+如果输出为空，说明本地仓库尚未关联任何远程仓库；如果有旧的远程配置，可先删除（比如删除名为 `origin` 的远程）：
+```bash
+git remote remove origin
+```
+
+#### 2. 添加 GitHub 远程仓库（核心步骤）
+`git remote add` 是关联远程仓库的正确命令，`origin` 是远程仓库的默认别名（行业通用惯例，也可自定义）：
+```bash
+git remote add origin https://github.com/shenekin/Dashbaord_Cloud_resource_management_system.git
+```
+
+#### 3. 推送本地 dev 分支到远程仓库
+由于你当前在 dev 分支，需要将本地分支推送到远程，并设置**上游追踪**（方便后续直接用 `git push`/`git pull`，无需重复指定远程和分支）：
+```bash
+git push -u origin dev
+```
+执行后会提示你输入 GitHub 的用户名和密码（或个人访问令牌 PAT，推荐用 PAT，尤其是开启 2FA 的情况），验证通过后即可完成推送。
+
+### 关键命令解释
+- `git remote add <远程别名> <远程仓库地址>`：建立本地仓库与远程仓库的关联；
+- `git push -u <远程别名> <本地分支>`：`-u`（全称 `--set-upstream`）会把本地分支和远程分支建立追踪关系，后续仅需 `git push` 即可推送；
+- `git remote -v`：查看已关联的远程仓库列表（`-v` 是 `--verbose`，显示详细的 fetch/push 地址）。
+
+### 总结
+1. 关联远程仓库的核心命令是 `git remote add`，而非 `git add`（`git add` 仅用于暂存文件）；
+2. 添加远程后，需用 `git push -u origin dev` 推送本地分支并建立追踪关系；
+3. 可通过 `git remote -v` 验证远程仓库是否关联成功，`git remote remove <别名>` 可删除错误的远程配置。

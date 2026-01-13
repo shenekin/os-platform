@@ -1,0 +1,84 @@
+If you'd like to install **Docker** using a `.deb` package instead of using the APT repository, follow these steps:
+
+---
+
+### ✅ **Step 1: Download Docker `.deb` Package**
+
+You can manually download the Docker `.deb` package for Ubuntu from the official Docker website. This ensures you get the latest stable version.
+
+1. **Go to Docker's download page**:
+   [Docker Engine - Ubuntu](https://download.docker.com/linux/ubuntu/dists/)
+
+2. **Download the latest `.deb` packages** for Ubuntu. Here’s a quick way to fetch them using `wget`.
+
+Run the following command to download the Docker `.deb` packages:
+
+```bash
+wget https://download.docker.com/linux/ubuntu/dists/stable/main/binary-amd64/docker-ce_24.0.5-1_amd64.deb
+```
+
+> Adjust the version (`docker-ce_24.0.5-1_amd64.deb`) if there's a newer one available.
+
+
+### ✅ **Step 2: Install the `.deb` Package**
+
+1. Once the `.deb` package is downloaded, you can install it using `dpkg`:
+
+```bash
+sudo dpkg -i docker-ce_24.0.5-1_amd64.deb
+```
+
+2. If there are any missing dependencies, run:
+
+```bash
+sudo apt --fix-broken install
+```
+
+This command will resolve and install any dependencies that are required by Docker.
+
+---
+
+### ✅ **Step 3: Verify the Installation**
+
+After installation is complete, verify Docker is working:
+
+1. Check the Docker version:
+
+```bash
+docker --version
+```
+
+2. Ensure the Docker service is running:
+
+```bash
+sudo systemctl status docker
+```
+
+---
+
+### ✅ **Step 4: (Optional) Add your user to the Docker group**
+
+If you'd like to use Docker without `sudo`, add your user to the Docker group:
+
+```bash
+sudo usermod -aG docker $USER
+```
+
+You may need to log out and log back in for the changes to take effect, or run `newgrp docker`.
+
+---
+
+### ✅ **Step 5: Test Docker**
+
+Run a simple test to verify that Docker is working correctly:
+
+```bash
+docker run hello-world
+```
+
+This will download and run the **hello-world** image, which outputs a success message if everything is set up properly.
+
+---
+
+That's it! You’ve now installed Docker using a `.deb` package. Let me know if you need further help with Docker setup or usage!
+

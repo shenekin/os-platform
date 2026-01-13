@@ -1,0 +1,5 @@
+2. Install GNOME
+sudo yum group list
+sudo yum groupinstall "GNOME Desktop" -y
+sudo systemctl set-default graphical.target
+sudo reboot

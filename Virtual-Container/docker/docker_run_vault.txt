@@ -1,0 +1,20 @@
+docker run -d --name vault --network dev-net -p 8200:8200 -v /data_storge/valut/data:/var/lib/vault --cap-add=IPC_LOCK -e VAULT_DEV_ROOT_TOKEN_ID=root -e VAULT_DEV_LISTEN_ADDRESS=0.0.0.0:8200 hashicorp/vault:1.16.1 vault server -dev
+
+
+
+
+docker run -d --name --cap-add=IPC_LOCK vault -p 8200:8200 -v /opt/vault/config:/vault/config -v /opt/vault/data:/vault/data --cap-add=IPC_LOCK  hashicorp/vault:1.16.1 server -config=/vault/config/vault.hcl
+
+
+docker run -d \
+  --name vault \
+  --cap-add=IPC_LOCK \
+  -p 8200:8200 \
+  -v /opt/vault/data:/vault/data \
+  -v /opt/vault/config:/vault/config \
+  -e VAULT_ADDR=http://127.0.0.1:8200 \
+  hashicorp/vault:1.18 \
+  vault server -config=/vault/config/vault.hcl
+  
+docker run -d   --name vault   --cap-add=IPC_LOCK   -p 8200:8200   -v /opt/vault/data:/vault/data   -v /opt/vault/config:/vault/config   -e VAULT_ADDR=http://127.0.0.1:8200   hashicorp/vault:1.18   vault server -config=/vault/config/vault.hcl
+ 

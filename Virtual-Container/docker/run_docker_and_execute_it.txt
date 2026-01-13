@@ -1,0 +1,483 @@
+
+To run Redis 5 and MySQL 8.0 in Docker containers on your system, you can follow the steps below.
+
+### 1. **Install Docker** (if not installed yet)
+
+If Docker is not yet installed on your machine, you can install it by following the official guide:
+
+* [Install Docker](https://docs.docker.com/get-docker/)
+
+### 2. **Pull the Redis 5 Docker Image**
+
+Redis 5 can be pulled from Docker Hub. Use the following command to pull the Redis 5 image:
+
+```bash
+docker pull redis:5
+```
+
+### 4. **Run Redis 5 Container**
+
+Once Redis 5 is downloaded, you can run it in a Docker container using the following command:
+
+```bash
+docker run --name redis-container -d redis:5
+```
+
+* `--name redis-container`: Names the container `redis-container` for easy reference.
+* `-d`: Runs the container in the background (detached mode).
+
+To check if Redis is running correctly, you can inspect the logs:
+
+```bash
+docker logs redis-container
+```
+
+You can also test the connection to the Redis container:
+
+```bash
+docker exec -it redis-container redis-cli
+```
+
+Once you're in the `redis-cli`, you can run commands like:
+
+```bash
+ping
+```
+
+Which should return `PONG`.
+
+### 5. **Run MySQL 8.0 Container**
+
+Now, let's run the MySQL 8.0 container. You need to specify a password for the `root` user when running the container, using the `MYSQL_ROOT_PASSWORD` environment variable:
+
+```bash
+docker run --name mysql-container -e MYSQL_ROOT_PASSWORD=my-secret-pw -d mysql:8.0
+```
+
+* `--name mysql-container`: Names the container `mysql-container`.
+* `-e MYSQL_ROOT_PASSWORD=my-secret-pw`: Sets the root password to `my-secret-pw` (change it to something secure).
+* `-d`: Runs the container in the background.
+
+### 6. **Access MySQL 8.0**
+
+To access the MySQL container, you can use the following command:
+
+```bash
+docker exec -it mysql-container mysql -uroot -p
+```
+
+Then enter the root password (`my-secret-pw` in this case). Once logged in, you can run MySQL commands:
+
+```bash
+show databases;
+```
+
+### 7. **Verify Both Containers are Running**
+
+To verify that both containers are running, use:
+
+```bash
+docker ps
+```
+
+This will list the active containers, including Redis and MySQL.
+
+### 8. **Optional: Persist Data**
+
+If you want your Redis and MySQL data to persist even if the containers are removed, you should mount volumes. Here’s how you can modify the `docker run` commands:
+
+#### For Redis 5:
+
+```bash
+docker run --name redis-container -d -v redis-data:/data redis:5
+```
+
+This mounts the `redis-data` volume to `/data` inside the container.
+
+#### For MySQL 8.0:
+
+```bash
+docker run --name mysql-container -e MYSQL_ROOT_PASSWORD=my-secret-pw -d -v mysql-data:/var/lib/mysql mysql:8.0
+```
+
+This mounts the `mysql-data` volume to `/var/lib/mysql` inside the container.
+
+### 9. **Stopping and Restarting Containers**
+
+To stop the containers, use:
+
+```bash
+docker stop redis-container mysql-container
+```
+
+To restart them, use:
+
+```bash
+docker start redis-container mysql-container
+```
+
+
+
+The error message **"permission denied while trying to connect to the Docker API at unix:///var/run/docker.sock"** typically occurs when the current user does not have permission to access Docker. By default, Docker commands require superuser (root) privileges because they access the Docker daemon, which listens on `/var/run/docker.sock`.
+
+Here’s how you can resolve this issue:
+
+### 1. **Add Your User to the Docker Group**
+
+The Docker daemon socket file (`/var/run/docker.sock`) is usually owned by the `docker` group, and by adding your user to this group, you can grant it the necessary permissions to interact with Docker.
+
+Run the following command to add your user to the `docker` group:
+
+```bash
+sudo usermod -aG docker $USER
+```
+
+* `-aG` means "append the user to the Docker group".
+* `$USER` is an environment variable that represents the currently logged-in user.
+
+### 2. **Restart Your Session**
+
+After running the above command, you need to log out and log back in (or restart your system) to apply the group membership change.
+
+Alternatively, you can run the following to start a new shell with the updated group:
+
+```bash
+newgrp docker
+```
+
+This will allow your current session to have the new group privileges without needing to log out.
+
+### 3. **Verify Docker Permissions**
+
+After restarting or updating the group membership, you should be able to run Docker commands without `sudo`.
+
+Check if you can run `docker` commands without permission errors:
+
+```bash
+docker ps
+```
+
+This should show the list of running containers.
+
+### 4. **Check Docker Daemon Status**
+
+If the issue persists, make sure the Docker service is running. Check its status with:
+
+```bash
+sudo systemctl status docker
+```
+
+sudo systemctl start docker
+
+sudo systemctl enable docker
+```
+
+### 5. **Using `sudo` as a Temporary Workaround**
+
+If you are unable or unwilling to modify user permissions, you can prepend `sudo` to your Docker commands as a temporary workaround. For example:
+
+```bash
+sudo docker ps
+```
+This will run the command with superuser privileges.
+
+After following these steps, you should no longer encounter the **"permission denied"** error when interacting with Docker. Let me know if you run into any other issues!
+
+To connect to a MySQL 8.0 container running in Docker, you have a few options. Here’s a step-by-step guide on how to connect to your MySQL 8.0 instance from both inside the Docker container and from the host machine (or external client).
+
+### 1. **Connect to MySQL from Inside the Docker Container**
+
+If you’re already inside the MySQL container, you can connect to MySQL using the `mysql` client. Here’s how:
+
+1. **Access the MySQL container**:
+   Run the following command to get inside the running MySQL container:
+
+   ```bash
+   docker exec -it mysql-container bash
+   ```
+
+   This opens an interactive shell (`bash`) in the container.
+
+2. **Connect to MySQL**:
+   Once you're inside the container, use the MySQL client to log into MySQL with the root password (replace `my-secret-pw` with your actual root password):
+
+   ```bash
+   mysql -uroot -p
+   ```
+
+   You’ll be prompted for the password (`my-secret-pw` or whatever you set).
+
+3. **Run SQL commands**:
+   After you log in successfully, you can start running MySQL commands. For example, to show databases:
+
+   ```sql
+   show databases;
+   ```
+
+---
+
+### 2. **Connect to MySQL from Host Machine Using Docker**
+
+If you want to connect to the MySQL 8.0 container from your host machine (i.e., outside the Docker container), you need to ensure the MySQL container’s port is exposed correctly.
+
+1. **Expose MySQL Port When Running the Container**:
+   When running the MySQL container, you need to publish the MySQL port (default is `3306`) to a port on your host machine:
+
+   ```bash
+   docker run --name mysql-container -e MYSQL_ROOT_PASSWORD=my-secret-pw -d -p 3306:3306 mysql:8.0
+   ```
+
+   * `-p 3306:3306` binds the MySQL port inside the container (`3306`) to the same port on the host machine.
+
+2. **Connect Using MySQL Client on the Host**:
+   Once the MySQL container is running and the port is exposed, you can connect from the host machine using the `mysql` client or any MySQL client software (such as MySQL Workbench).
+
+   Run the following command from your host machine (replace `localhost` with your Docker host's IP address if not running locally):
+
+   ```bash
+   mysql -h 127.0.0.1 -P 3306 -uroot -p
+   ```
+
+   * `-h 127.0.0.1`: Host machine IP address (localhost if you're on the same machine).
+   * `-P 3306`: Port number.
+   * `-uroot`: Username (`root`).
+   * `-p`: Password prompt (enter the password you set for `MYSQL_ROOT_PASSWORD` when creating the container, e.g., `my-secret-pw`).
+
+---
+
+### 3. **Connect from External MySQL Client (e.g., MySQL Workbench)**
+
+If you want to use a graphical client like **MySQL Workbench** or another MySQL client:
+
+1. **Expose MySQL Port**:
+   As mentioned earlier, you need to expose the port `3306` when you run the container:
+
+   ```bash
+   docker run --name mysql-container --network auth-network  -e MYSQL_ROOT_PASSWORD=my-secret-pw -d -p 3306:3306 mysql:8.0
+   ```
+docker run --name mysql-container --network dev-net -e MYSQL_ROOT_PASSWORD=1qaz@WSX -d -w /data_storge/mysql_8/:/data -p 3306:3306 mysql:8.0
+2. **Configure MySQL Workbench**:
+   Open **MySQL Workbench** or any MySQL GUI client, and configure the connection using the following details:
+
+   * **Hostname**: `127.0.0.1` or your Docker host IP address (use `localhost` if you’re running the container on the same machine).
+   * **Port**: `3306` (or another port if you mapped it differently).
+   * **Username**: `root` (or any other user you've created).
+   * **Password**: `my-secret-pw` (or your configured root password).
+
+---
+
+### 4. **Troubleshooting Connection Issues**
+
+If you have trouble connecting, here are a few things to check:
+
+* **Firewall**: Make sure your firewall allows connections on port `3306` (if you're connecting from an external machine).
+* **Container Running**: Verify that the MySQL container is running with the command:
+
+  ```bash
+  docker ps
+  ```
+
+  Ensure the container is up and that the ports are mapped correctly.
+* **Password**: Ensure you're using the correct password (`MYSQL_ROOT_PASSWORD`) set during container creation.
+
+---
+
+### Summary of Steps to Connect to MySQL 8.0 in Docker:
+
+1. **Inside the container**:
+
+   ```bash
+   docker exec -it mysql-container --network auth-network mysql -uroot -p
+   
+   ```
+
+2. **From the host machine** (if port is exposed):
+
+   ```bash
+   mysql -h 127.0.0.1 -P 3306 -uroot -p
+   ```
+
+3. **From a GUI client** (e.g., MySQL Workbench):
+   Use `127.0.0.1` or Docker host IP with port `3306`, and the username `root` with the set password.
+
+Let me know if you run into any issues!
+
+To connect to a **Redis 5** container running in Docker, you can follow these steps. I'll explain both how to connect from inside the Docker container as well as from the host machine or an external Redis client.
+
+### 1. **Connect to Redis 5 from Inside the Docker Container**
+
+If you're already inside the Redis container, you can use the `redis-cli` to connect to Redis.
+
+1. **Access the Redis container**:
+   First, you need to enter the running Redis container. You can do this with the `docker exec` command:
+
+   ```bash
+   docker exec -it redis-container bash
+   ```
+
+   This opens an interactive shell inside the Redis container.
+
+2. **Connect to Redis using `redis-cli`**:
+   Once inside the container, you can use the Redis command-line interface (`redis-cli`) to interact with the Redis server:
+
+   ```bash
+   redis-cli
+   ```
+
+   This will connect to Redis running locally inside the container.
+
+   If you want to check the connection, try running a Redis command, such as:
+
+   ```bash
+   ping
+   ```
+
+   If the connection is successful, it should return `PONG`.
+
+### 2. **Connect to Redis 5 from the Host Machine**
+
+If you want to connect to Redis from the host machine (outside of the Docker container), you need to make sure the Redis container's port is exposed.
+
+#### 2.1 **Expose Redis Port When Running the Container**
+
+When running the Redis container, make sure to expose Redis's default port (`6379`):
+
+```bash
+docker run --name redis-container -d -p 6379:6379 redis:5
+```
+
+This binds the Redis container's internal port `6379` to port `6379` on your host machine.
+
+#### 2.2 **Connect Using `redis-cli` from the Host**
+
+Once the container is running with the port exposed, you can use `redis-cli` (on your host machine) to connect to Redis:
+
+```bash
+redis-cli -h 127.0.0.1 -p 6379
+```
+
+This command connects to Redis running locally on port `6379`.
+
+#### 2.3 **Using a Redis Client (GUI)**
+
+You can also use a graphical Redis client such as **Redis Desktop Manager** or **Another Redis DeskTop Manager (RDM)** to connect to Redis.
+
+* **Hostname**: `127.0.0.1` or the IP of the Docker host machine.
+* **Port**: `6379` (or any other port you mapped to).
+* **Password**: If you've set a password for your Redis container (with the `REDIS_PASSWORD` environment variable), you’ll need to enter it here.
+
+Example: For **Redis Desktop Manager**, enter:
+
+* **Host**: `127.0.0.1`
+* **Port**: `6379`
+* **Password**: Leave it blank if there is no password set.
+
+### 3. **Connect to Redis from Another Docker Container**
+
+If you want to connect to Redis from another Docker container, you can either:
+
+1. **Use the Redis container's name** (if both containers are in the same network):
+
+   ```bash
+   docker exec -it other-container redis-cli -h redis-container -p 6379
+   ```
+
+   Here, `other-container` is the name of the other container you're connecting from, and `redis-container` is the name of your Redis container.
+
+2. **Use Docker's network bridge** to link the containers (if they’re not using the same network by default).
+
+### 4. **Troubleshooting Redis Connection**
+
+If you are unable to connect to Redis, here are some things to check:
+
+* **Firewall**: Ensure that port `6379` is open on your host machine or any firewall rules are not blocking access.
+
+* **Container Running**: Make sure the Redis container is running. Check with:
+
+  ```bash
+  docker ps
+  ```
+
+* **Correct Password**: If you've set a password for Redis, ensure that you're passing the `-a` (auth) flag with the correct password in your `redis-cli` command:
+
+  ```bash
+  redis-cli -h 127.0.0.1 -p 6379 -a yourpassword
+  ```
+
+---
+
+### Summary of Steps
+
+1. **Inside the Redis container**:
+
+   ```bash
+   docker exec -it redis-container redis-cli
+   ```
+
+2. **From the host machine** (after exposing port):
+
+   ```bash
+   redis-cli -h 127.0.0.1 -p 6379
+   ```
+
+3. **From a Redis GUI client**:
+
+   * Host: `127.0.0.1`
+   * Port: `6379`
+   * Password: (if set)
+
+Let me know if you need help with any part of the process!
+
+To check the Docker images available on your system, you can use the following command:
+
+```bash
+docker images
+```
+
+This command will display a list of all the Docker images currently stored on your machine. The output will look something like this:
+
+```
+REPOSITORY          TAG                 IMAGE ID            CREATED             SIZE
+mysql               8.0                 abc123xyz456        2 days ago          400MB
+redis               5                   def789xyz012        3 days ago          100MB
+nginx               latest              ghi345xyz678        5 days ago          150MB
+```
+
+### Explanation of the columns:
+
+* **REPOSITORY**: The name of the image.
+* **TAG**: The tag for the image (usually the version).
+* **IMAGE ID**: A unique identifier for the image.
+* **CREATED**: The time when the image was created.
+* **SIZE**: The size of the image on disk.
+
+### Additional Options:
+
+* **Show more details** (e.g., including intermediate images):
+
+  ```bash
+  docker images -a
+  ```
+
+* **Filter images by repository**:
+  If you want to list only images for a specific repository (e.g., `redis`), you can use:
+
+  ```bash
+  docker images redis
+  ```
+
+* **Prune unused images**:
+  If you have unused Docker images taking up space, you can remove them using:
+
+  ```bash
+  docker image prune
+  ```
+
+  This will remove dangling (unused) images. You can also add the `-a` flag to remove all unused images, not just dangling ones:
+
+  ```bash
+  docker image prune -a
+  ```
+
+Let me know if you need more details or help with managing Docker images!
+

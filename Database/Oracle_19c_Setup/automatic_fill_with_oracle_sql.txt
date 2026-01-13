@@ -1,0 +1,24 @@
+# Install rlwrap
+sudo yum install -y rlwrap
+
+# Add alias to .bashrc
+echo "" >> ~/.bashrc
+echo "# Enable rlwrap for sqlplus" >> ~/.bashrc
+echo "alias sqlplus='rlwrap -H ~/.sqlplus_history sqlplus'" >> ~/.bashrc
+
+# Apply changes immediately
+source ~/.bashrc
+
+echo "rlwrap has been installed."
+echo "sqlplus is now enhanced with command history and basic auto-completion."
+echo "You can use arrow keys and press [Tab] for partial completion."
+
+
+
+sudo yum remove rlwrap -y
+
+
+# Open .bashrc and delete the alias line
+vi ~/.bashrc
+# Then reload the shell
+source ~/.bashrc

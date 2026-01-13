@@ -1,0 +1,254 @@
+#!/bin/bash
+# =====================================================
+# Intelligent Fully Automated Oracle 19c Installer
+# Features:
+# 1. Auto-detect RAM/CPU to calculate DB memory allocation
+# 2. Auto-generate ORACLE_SID names if not provided
+# 3. Check/install prerequisites
+# 4. Silent installation via runInstaller
+# 5. Database creation via dbca
+# 6. Listener setup and tablespaces
+# 7. Auto-start configuration
+# =====================================================
+
+# -------------------------
+# User Configurable Variables
+# -------------------------
+# Oracle 19c Environment Variables
+# Oracle base directories
+export ORACLE_BASE=/or01/app
+export ORACLE_HOME=$ORACLE_BASE/oracle/product/19c/dbhome_1
+export SQLPATH=$ORACLE_HOME/sqlplus/admin
+# Oracle SID (System Identifier)
+export ORACLE_SID=ord1
+export $TMPDIR=tmp
+# Oracle Net Service (Listener TNS)
+export ORACLE_UNQNAME=$ORACLE_SID
+export TNS_ADMIN=$ORACLE_HOME/network/admin
+# Path settings
+export PATH=$ORACLE_HOME/bin:$ORACLE_HOME/OPatch:$PATH
+export LD_LIBRARY_PATH=$ORACLE_HOME/lib:/lib:/usr/lib
+export CLASSPATH=$ORACLE_HOME/jlib:$ORACLE_HOME/rdbms/jlib
+# Java for Oracle tools (e.g., DBCA, NetCA)
+export JAVA_HOME=$ORACLE_HOME/jdk
+export PATH=$JAVA_HOME/bin:$PATH
+# Character set (optional, for multi-language DB support)
+export NLS_LANG=AMERICAN_AMERICA.AL32UTF8
+# SQL*Plus prompt (useful for multiple DBs)
+export SQLPROMPT='[_USER"@"_CONNECT_IDENTIFIER]> '
+# History control (long commands)
+export HISTSIZE=10000
+export HISTFILESIZE=20000
+export ORACLE_USER="oracle"
+export ORACLE_GROUP="oinstall"
+export DBA_GROUP="dba"
+export INSTALL_ZIP_PATH="/opt/oracle/LINUX.X64_193000_db_home.zip"
+export INSTANCE_LIST=()              # Leave empty to auto-generate
+export ISTENER_PORT=1560
+export TABLESPACES=("USERS:100M" "DATA:500M")
+export PROFILE_FILE="/home/$ORACLE_USER/.bash_profile"
+export DB_PASSWORD="oracle19c"
+# -------------------------
+# Function: Check prerequisites
+# -------------------------
+echo "Checking prerequisites..."
+REQUIRED_PKGS=(unzip libaio bc elfutils-libelf)
+for PKG in "${REQUIRED_PKGS[@]}"; do
+    if ! rpm -q "$PKG" &>/dev/null; then
+        echo "Installing missing package: $PKG"
+        yum install -y "$PKG"
+    fi
+done
+
+mkdir -p $ORACLE_BASE/oraInventory/
+mkdir -p $ORACLE_BASE/oradata
+mkdir -p $ORACLE_HOME
+
+# -------------------------
+# Detect system RAM and calculate DB memory percentage
+# -------------------------
+TOTAL_MEM_MB=$(free -m | awk '/Mem:/ {print $2}')
+# Allocate 40% of total memory if small server, max 8GB
+if [ "$TOTAL_MEM_MB" -lt 16000 ]; then
+    DB_MEMORY_PERCENT=40
+else
+    DB_MEMORY_PERCENT=60
+fi
+echo "Detected RAM: $TOTAL_MEM_MB MB, DBCA memory allocation: $DB_MEMORY_PERCENT%"
+
+# -------------------------
+# Auto-generate ORACLE_SID if INSTANCE_LIST is empty
+# -------------------------
+if [ ${#INSTANCE_LIST[@]} -eq 0 ]; then
+    INSTANCE_LIST=("ORCL$(date +%s | tail -c4)")
+fi
+
+# -------------------------
+# Configure environment variables
+# -------------------------
+echo "Configuring environment variables..."
+cat >> $PROFILE_FILE <<EOF
+export ORACLE_BASE=/or01/app
+export SQLPATH=$ORACLE_HOME/sqlplus/admin
+# Oracle SID (System Identifier)
+export ORACLE_SID=ord1
+# Oracle Net Service (Listener TNS)
+export ORACLE_UNQNAME=$ORACLE_SID
+export TNS_ADMIN=$ORACLE_HOME/network/admin
+# Path settings
+export PATH=$ORACLE_HOME/bin:$ORACLE_HOME/OPatch:$PATH
+# Java for Oracle tools (e.g., DBCA, NetCA)
+export JAVA_HOME=$ORACLE_HOME/jdk
+export PATH=$JAVA_HOME/bin:$PATH
+# Character set (optional, for multi-language DB support)
+export NLS_LANG=AMERICAN_AMERICA.AL32UTF8
+# SQL*Plus prompt (useful for multiple DBs)
+export SQLPROMPT='[_USER"@"_CONNECT_IDENTIFIER]> '
+# History control (long commands)
+export HISTSIZE=10000
+export HISTFILESIZE=20000
+export ORACLE_USER="oracle"
+export ORACLE_GROUP="oinstall"
+export DBA_GROUP="dba"
+export INSTANCE_LIST=()              # Leave empty to auto-generate
+export ISTENER_PORT=1560
+export TABLESPACES=("USERS:100M" "DATA:500M")
+export $TMPDIR=tmp
+EOF
+source PROFILE_FILE
+
+# -------------------------
+# Extract Oracle installation files
+# -------------------------
+echo "Extracting Oracle installation files..."
+unzip -q $INSTALL_ZIP_PATH -d $ORACLE_HOME
+
+# -------------------------
+# Generate runInstaller response file
+# -------------------------
+RESPONSE_FILE="$TMPDIR/db_install.rsp"
+cat > $RESPONSE_FILE <<EOF
+oracle.install.responseFileVersion=/tmp/db_install.rsp
+ORACLE_HOSTNAME=ord1
+UNIX_GROUP_NAME=oinstall
+INVENTORY_LOCATION=/or01/app/oraInventory
+ORACLE_HOME=/or01/app/oracle/product/19c/dbhome_1
+ORACLE_BASE=/or01/app
+oracle.install.db.InstallEdition=EE
+DECLINE_SECURITY_UPDATES=true
+oracle.install.option=INSTALL_DB_SWONLY
+UNIX_GROUP_NAME=oinstall
+INVENTORY_LOCATION=/or01/app/oraInventory
+#Even if you don’t use backup/Data Guard/RAC/KMS, Oracle 19c installer still requires these keys — you can safely point them all to the same group (dba)
+OSDBA_GROUP=dba
+OSOPER_GROUP=oper
+OSBACKUPDBA_GROUP=dba
+OSDGDBA_GROUP=dba
+OSKMDBA_GROUP=dba
+OSRACDBA_GROUP=dba
+oracle.install.db.rootconfig.executeRootScript=true
+oracle.install.db.rootconfig.configMethod=SUDO
+oracle.install.db.rootconfig.sudoUserName=root
+oracle.install.db.rootconfig.sudoPath=/usr/bin/sudo
+oracle.install.db.ConfigureAsContainerDB=true
+oracle.install.db.config.starterdb.type=GENERAL_PURPOSE
+oracle.install.db.config.starterdb.globalDBName=ord1
+oracle.install.db.config.starterdb.SID=ord1
+oracle.install.db.config.PDBName=pdb1
+oracle.install.db.config.starterdb.characterSet=AL32UTF8
+oracle.install.db.config.starterdb.memoryOption=true
+oracle.install.db.config.starterdb.memoryLimit=2048
+oracle.install.db.config.starterdb.password.ALL=oracle19c
+oracle.install.db.DBA_GROUP=dba
+oracle.install.db.OPER_GROUP=oper
+oracle.install.db.rootconfig.executeRootScript=true
+SECURITY_UPDATES_VIA_MYORACLESUPPORT=false
+DECLINE_SECURITY_UPDATES=true
+EOF
+
+# -------------------------
+# Run runInstaller as Oracle user
+# -------------------------
+echo "Starting Oracle software installation..."
+su - $ORACLE_USER -c "$ORACLE_HOME/runInstaller -silent -responseFile $RESPONSE_FILE -ignorePrereq -waitforcompletion"
+
+# -------------------------
+# Execute root scripts
+# -------------------------
+echo "Running root scripts..."
+$ORACLE_BASE/oraInventory/orainstRoot.sh
+$ORACLE_HOME/root.sh
+
+# -------------------------
+# Configure Listener
+# -------------------------
+echo "Configuring listener..."
+cat > $ORACLE_HOME/network/admin/listener.ora <<EOF
+LISTENER =
+  (DESCRIPTION_LIST =
+    (DESCRIPTION =
+      (ADDRESS = (PROTOCOL = TCP)(HOST = $(hostname -f))(PORT = $ISTENER_PORT))
+    )
+  )
+EOF
+
+lsnrctl stop LISTENER 2>/dev/null
+lsnrctl start LISTENER
+lsnrctl status
+
+# -------------------------
+# Create Database Instances
+# -------------------------
+for ORACLE_SID in "${INSTANCE_LIST[@]}"; do
+    echo "Creating database instance: $ORACLE_SID"
+    export ORACLE_SID=$ORACLE_SID
+    dbca -silent -createDatabase \
+        -templateName General_Purpose.dbc \
+        -gdbname "$ORACLE_SID" \
+        -sid "$ORACLE_SID" \
+        -responseFile NO_VALUE \
+        -characterSet AL32UTF8 \
+        -memoryPercentage $DB_MEMORY_PERCENT \
+        -emConfiguration DBEXPRESS \
+        -SYSPassword $DB_PASSWORD \
+        -SYSTEMPassword $DB_PASSWORD \
+        -datafileDestination "$ORACLE_BASE/oradata/$ORACLE_SID" \
+        -storageType FS \
+        -createAsContainerDatabase false \
+        -ignorePreReqs
+
+    # Auto-create tablespaces
+    for TS in "${TABLESPACES[@]}"; do
+        NAME=$(echo "$TS" | cut -d: -f1)
+        SIZE=$(echo "$TS" | cut -d: -f2)
+        sqlplus / as sysdba <<SQL
+CREATE TABLESPACE $NAME DATAFILE '$ORACLE_BASE/oradata/$ORACLE_SID/${ORACLE_SID}.dbf' SIZE $SIZE AUTOEXTEND ON NEXT 50M MAXSIZE UNLIMITED;
+SQL
+    done
+done
+
+# -------------------------
+# Configure Auto-start at Boot
+# -------------------------
+echo "Setting up Oracle auto-start service..."
+cat > /etc/systemd/system/oracle.service <<EOF
+[Unit]
+Description=Oracle Database 19c
+After=network.target
+[Service]
+Type=forking
+User=$ORACLE_USER
+Group=$ORACLE_GROUP
+ExecStart=$ORACLE_HOME/bin/dbstart $ORACLE_HOME
+ExecStop=$ORACLE_HOME/bin/dbshut $ORACLE_HOME
+RemainAfterExit=yes
+
+[Install]
+WantedBy=multi-user.target
+EOF
+
+systemctl daemon-reload
+systemctl enable oracle.service
+systemctl start oracle.service
+
+echo "Oracle 19c intelligent fully automated installation completed successfully!"
