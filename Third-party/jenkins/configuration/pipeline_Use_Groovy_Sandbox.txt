@@ -1,0 +1,82 @@
+pipeline {
+    agent any
+
+    environment {
+        AZURE_SUBSCRIPTION_ID = "d40d8beb-1741-4b53-9011-2487884a6a32"
+        AZURE_TENANT_ID       = "1e0cbb5a-1882-4f5c-980f-b9599c19342d"
+
+        ACR_NAME         = "ekinregistry"
+        ACR_LOGIN_SERVER = "ekinregistry.azurecr.io"
+
+        IMAGE_NAME = "auth-service"
+        IMAGE_TAG  = "${BUILD_NUMBER}"
+
+        RESOURCE_GROUP = "rg-aks-dev"
+        AKS_CLUSTER    = "aks-dev"
+    }
+
+    stages {
+
+        stage('Checkout Code') {
+            steps {
+                // Specify branch and credentials for private repo
+                git branch: 'dev-secret-19044', // your target branch
+                    url: 'https://github.com/shenekin/auth-service.git',
+                    credentialsId: 'github-cred' // replace with your Jenkins Git credential ID
+            }
+        }
+
+        stage('Login to Azure') {
+            steps {
+                withCredentials([
+                    usernamePassword(
+                        credentialsId: 'jenkins-sp', // your SP credential in Jenkins
+                        usernameVariable: 'AZURE_CLIENT_ID',    // appId
+                        passwordVariable: 'AZURE_CLIENT_SECRET' // password
+                    )
+                ]) {
+                    sh '''
+                        echo "Logging into Azure..."
+                        az login --service-principal \
+                            --username "$AZURE_CLIENT_ID" \
+                            --password "$AZURE_CLIENT_SECRET" \
+                            --tenant "$AZURE_TENANT_ID"
+
+                        az account set --subscription "$AZURE_SUBSCRIPTION_ID"
+                    '''
+                }
+            }
+        }
+
+        stage('Build Docker Image') {
+            steps {
+                sh '''
+                    docker build -t "$ACR_LOGIN_SERVER/$IMAGE_NAME:$IMAGE_TAG" .
+                '''
+            }
+        }
+
+        stage('Push Image to ACR') {
+            steps {
+                sh '''
+                    az acr login --name "$ACR_NAME"
+                    docker push "$ACR_LOGIN_SERVER/$IMAGE_NAME:$IMAGE_TAG"
+                '''
+            }
+        }
+
+        stage('Deploy to AKS') {
+            steps {
+                sh '''
+                    az aks get-credentials \
+                        --resource-group "$RESOURCE_GROUP" \
+                        --name "$AKS_CLUSTER" \
+                        --overwrite-existing
+
+                    kubectl set image deployment/front-crmp \
+                        front-crmp="$ACR_LOGIN_SERVER/$IMAGE_NAME:$IMAGE_TAG"
+                '''
+            }
+        }
+    }
+}

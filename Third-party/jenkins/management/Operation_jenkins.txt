@@ -1,0 +1,2 @@
+Check default password using kubectl
+kubectl exec -n jenkins deploy/jenkins -- cat /var/jenkins_home/secrets/initialAdminPassword
