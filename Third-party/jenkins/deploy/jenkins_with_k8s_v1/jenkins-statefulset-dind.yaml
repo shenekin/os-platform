@@ -1,0 +1,118 @@
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: jenkins
+  namespace: jenkins
+  labels:
+    app: jenkins
+spec:
+  serviceName: jenkins
+  replicas: 1
+  selector:
+    matchLabels:
+      app: jenkins
+  template:
+    metadata:
+      labels:
+        app: jenkins
+    spec:
+      serviceAccountName: jenkins
+      initContainers:
+      - name: fix-permissions
+        image: alpine:latest
+        command:
+        - sh
+        - -c
+        - |
+          apk add --no-cache shadow
+          chown -R 1000:1000 /var/jenkins_home
+          chmod -R 755 /var/jenkins_home
+        volumeMounts:
+        - name: jenkins-home
+          mountPath: /var/jenkins_home
+      
+      containers:
+      - name: jenkins
+        image: ekinacr123.azurecr.io/jenkins-python:latest
+        ports:
+        - containerPort: 8080
+          name: http
+        - containerPort: 50000
+          name: agent
+        env:
+        - name: JAVA_OPTS
+          value: "-Djenkins.install.runSetupWizard=true -Xms512m -Xmx2048m -Djenkins.model.Jenkins.slaveAgentPort=50000"
+        - name: DOCKER_HOST
+          value: "tcp://localhost:2375"
+            #resources:
+            #requests:
+            #memory: "1Gi"
+            #cpu: "500m"
+            #limits:
+            #memory: "2Gi"
+            #cpu: "2000m"
+        volumeMounts:
+        - name: jenkins-home
+          mountPath: /var/jenkins_home
+            #readinessProbe:
+            #httpGet:
+            #path: /login
+            #port: 8080
+            #initialDelaySeconds: 90
+            #periodSeconds: 15
+            #failureThreshold: 10
+            #livenessProbe:
+            #httpGet:
+            #path: /login
+            #port: 8080
+            #initialDelaySeconds: 180
+            #periodSeconds: 30
+            #failureThreshold: 5
+      
+      - name: dind
+        image: docker:24-dind
+        securityContext:
+          privileged: true
+        env:
+        - name: DOCKER_TLS_CERTDIR
+          value: ""
+        - name: DOCKER_DRIVER
+          value: "overlay2"
+        args:
+        - --host=tcp://0.0.0.0:2375
+        - --tls=false
+        - --storage-driver=overlay2
+        volumeMounts:
+        - name: docker-storage
+          mountPath: /var/lib/docker
+            #resources:
+            #requests:
+            #memory: "512Mi"
+            #cpu: "250m"
+            #limits:
+            #memory: "1Gi"
+            #cpu: "1000m"
+        livenessProbe:
+          exec:
+            command:
+            - docker
+            - info
+          initialDelaySeconds: 30
+          periodSeconds: 30
+        readinessProbe:
+          exec:
+            command:
+            - docker
+            - version
+          initialDelaySeconds: 15
+          periodSeconds: 10
+      
+      volumes:
+      - name: docker-storage
+        emptyDir: {}
+      - name: jenkins-home
+        persistentVolumeClaim:
+          claimName: jenkins-pvc # This should be the name of your existing PVC
+  
+  # Using existing PVC instead of creating new one
+  volumeClaimTemplates: []

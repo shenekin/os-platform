@@ -1,0 +1,126 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: jenkins
+  namespace: jenkins
+  labels:
+    app: jenkins
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: jenkins
+  template:
+    metadata:
+      labels:
+        app: jenkins
+    spec:
+      securityContext:
+        fsGroup: 1000
+
+      initContainers:
+        - name: prepare-jenkins
+          image: busybox:1.36
+          command:
+            - /bin/sh
+            - -c
+            - |
+              set -e
+              mkdir -p /var/jenkins_home/{plugins,jobs,logs,updates,.jenkins}
+              chown -R 1000:1000 /var/jenkins_home
+              chmod -R 775 /var/jenkins_home
+
+              # Keep setup wizard enabled
+              rm -f /var/jenkins_home/jenkins.install.UpgradeWizard.state
+              rm -f /var/jenkins_home/jenkins.install.InstallUtil.lastExecVersion
+
+              echo "Jenkins home prepared"
+          volumeMounts:
+            - name: jenkins-home
+              mountPath: /var/jenkins_home
+          securityContext:
+            runAsUser: 0
+
+      containers:
+        - name: jenkins
+          image: jenkins/jenkins:lts
+          ports:
+            - containerPort: 8080
+              name: web
+            - containerPort: 50000
+              name: agent
+          env:
+            - name: DOCKER_HOST
+              value: unix:///var/run/docker.sock
+            - name: JAVA_OPTS
+              value: "-Djenkins.install.runSetupWizard=false"
+            - name: JENKINS_OPTS
+              value: "--httpPort=8080 --webroot=/tmp/jenkins-war"
+          volumeMounts:
+            - name: jenkins-home
+              mountPath: /var/jenkins_home
+            - name: docker-socket
+              mountPath: /var/run
+          securityContext:
+            runAsUser: 1000
+            runAsGroup: 1000
+
+          # Give Jenkins enough time to fully start
+          startupProbe:
+            httpGet:
+              path: /login
+              port: 8080
+            periodSeconds: 10
+            timeoutSeconds: 5
+            failureThreshold: 60
+
+          readinessProbe:
+            httpGet:
+              path: /login
+              port: 8080
+            initialDelaySeconds: 30
+            periodSeconds: 10
+            timeoutSeconds: 5
+            failureThreshold: 6
+
+              #livenessProbe:
+              #httpGet:
+              #path: /login
+              #port: 8080
+              #initialDelaySeconds: 0
+              #periodSeconds: 30
+              #timeoutSeconds: 5
+              #failureThreshold: 5
+
+        - name: dind
+          image: docker:20.10.23-dind
+          securityContext:
+            privileged: true
+          volumeMounts:
+            - name: docker-storage
+              mountPath: /var/lib/docker
+            - name: docker-socket
+              mountPath: /var/run
+          readinessProbe:
+            exec:
+              command: ["sh", "-c", "docker info >/dev/null 2>&1"]
+            initialDelaySeconds: 10
+            periodSeconds: 5
+            timeoutSeconds: 5
+            failureThreshold: 12
+          livenessProbe:
+            exec:
+              command: ["sh", "-c", "docker info >/dev/null 2>&1"]
+            initialDelaySeconds: 20
+            periodSeconds: 10
+            timeoutSeconds: 5
+            failureThreshold: 6
+
+      volumes:
+        - name: jenkins-home
+          persistentVolumeClaim:
+            claimName: jenkins-pvc
+        - name: docker-socket
+          emptyDir: {}
+        - name: docker-storage
+          emptyDir: {}
