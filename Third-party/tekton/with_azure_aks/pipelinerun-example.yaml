@@ -1,0 +1,23 @@
+apiVersion: tekton.dev/v1beta1
+kind: PipelineRun
+metadata:
+  name: clone-build-push-kaniko-example
+  namespace: jenkins
+spec:
+  serviceAccountName: tekton-sa
+  pipelineRef:
+    name: clone-build-push-kaniko
+  params:
+    - name: git-url
+      value: https://github.com/your-org/your-repo.git
+    - name: git-revision
+      value: main
+    - name: acr-login-server
+      value: ekinregistry.azurecr.io
+    - name: image-repo
+      value: auth-service
+    - name: image-tag
+      value: v1
+  workspaces:
+    - name: shared-data
+      emptyDir: {}

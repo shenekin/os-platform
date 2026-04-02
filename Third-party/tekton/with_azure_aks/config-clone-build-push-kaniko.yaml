@@ -1,0 +1,33 @@
+# Parameters for: clone-build-push-kaniko.yaml
+# Do not kubectl apply this file — it is a configuration bundle only.
+# Pipeline-level names and build defaults (Hub Task names must exist in the cluster).
+
+forManifest: clone-build-push-kaniko.yaml
+parameters:
+  namespace: jenkins
+  pipelineName: clone-build-push-kaniko
+  description: "Clone a Git repo then build and push with Kaniko to ACR."
+
+  # Hub / catalog Task names (must match installed Tasks in .metadata.name)
+  hubTasks:
+    gitClone: git-clone
+    kaniko: kaniko
+
+  # Pipeline task step names (labels in the Pipeline only)
+  pipelineTasks:
+    fetchRepository: fetch-repository
+    buildAndPush: build-and-push
+
+  # Workspaces declared on the Pipeline (names must match PipelineRun bindings)
+  workspaces:
+    sharedData: shared-data
+    dockerconfig: dockerconfig
+
+  # Kaniko task params (paths relative to cloned repo root)
+  build:
+    dockerfile: ./Dockerfile
+    context: "."
+
+  # Default Pipeline param values (PipelineRun usually overrides git-url / revision / image-*)
+  defaults:
+    gitRevision: ""

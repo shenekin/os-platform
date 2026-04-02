@@ -1,0 +1,2 @@
+# Optional: render pipelinerun-auth-service.yaml from config-pipelinerun-auth-service.yaml
+PyYAML>=6.0

@@ -1,0 +1,12 @@
+# Parameters for: tekton-sa.yaml
+# Do not kubectl apply this file — it is a configuration bundle only.
+# After editing, copy values into tekton-sa.yaml or run: ./render-from-config.sh all
+
+forManifest: tekton-sa.yaml
+parameters:
+  namespace: jenkins
+  serviceAccountName: tekton-sa
+  # Secret with type kubernetes.io/dockerconfigjson (ACR login); listed on the ServiceAccount
+  acrDockerSecretName: acr-dockerconfig
+  # Optional: annotate that secret with Tekton (see README):
+  # tekton.dev/docker-0: "https://<acrLoginServer>"

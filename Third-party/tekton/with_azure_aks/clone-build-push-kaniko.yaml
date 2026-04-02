@@ -1,0 +1,57 @@
+# Pipeline: git-clone (Hub task) then kaniko (Hub task) push to Azure Container Registry.
+# Hyphenated pipeline params MUST use $(params['name']) in task param values (Tekton validation).
+apiVersion: tekton.dev/v1beta1
+kind: Pipeline
+metadata:
+  name: clone-build-push-kaniko
+  namespace: jenkins
+spec:
+  description: Clone a Git repo then build and push with Kaniko to ACR.
+  params:
+    - name: git-url
+      description: Git repository URL to clone.
+    - name: git-revision
+      description: Branch, tag, or commit SHA to checkout.
+      default: ""
+    - name: acr-login-server
+      description: Registry hostname (no scheme), e.g. myregistry.azurecr.io
+    - name: image-repo
+      description: Repository path under the registry (e.g. auth-service).
+    - name: image-tag
+      description: Image tag to push.
+  workspaces:
+    - name: shared-data
+      description: Shared workspace for cloned source and Kaniko build context.
+    - name: dockerconfig
+      description: Registry credentials for Kaniko (Hub kaniko Task mounts this at /kaniko/.docker).
+  tasks:
+    - name: fetch-repository
+      taskRef:
+        kind: Task
+        name: git-clone
+      params:
+        - name: url
+          value: $(params['git-url'])
+        - name: revision
+          value: $(params['git-revision'])
+      workspaces:
+        - name: output
+          workspace: shared-data
+    - name: build-and-push
+      runAfter:
+        - fetch-repository
+      taskRef:
+        kind: Task
+        name: kaniko
+      params:
+        - name: IMAGE
+          value: $(params['acr-login-server'])/$(params['image-repo']):$(params['image-tag'])
+        - name: DOCKERFILE
+          value: ./Dockerfile
+        - name: CONTEXT
+          value: .
+      workspaces:
+        - name: source
+          workspace: shared-data
+        - name: dockerconfig
+          workspace: dockerconfig

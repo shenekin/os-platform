@@ -1,0 +1,41 @@
+# Parameters for: pipelinerun-auth-service.yaml
+# Do not kubectl apply this file — it is a configuration bundle only.
+# Edit here, then run: ./render-from-config.sh pipelinerun
+# Or copy values manually into pipelinerun-auth-service.yaml
+
+forManifest: pipelinerun-auth-service.yaml
+parameters:
+  metadata:
+    name: clone-build-push-kaniko
+    namespace: jenkins
+
+  pipelineRef:
+    name: clone-build-push-kaniko
+
+  serviceAccountName: tekton-sa
+
+  git:
+    url: "https://github.com/shenekin/auth-service.git"
+    revision: "dev-secret-19044"
+
+  acr:
+    loginServer: "ekinregistry.azurecr.io"
+    imageRepo: "auth-service"
+    imageTag: "v1"
+
+  pod:
+    # git-clone Hub task runs as UID 65532; Azure Disk PVC needs group-writable volume
+    fsGroup: 65532
+
+  workspaces:
+    sharedData:
+      name: shared-data
+      volumeClaimTemplate:
+        accessModes:
+          - ReadWriteOnce
+        storage: 1Gi
+        # storageClassName: ""  # uncomment to pin a StorageClass on AKS
+    dockerconfig:
+      name: dockerconfig
+      # Opaque secret with key config.json (same JSON as .dockerconfigjson); see README
+      secretName: acr-dockerconfig-kaniko

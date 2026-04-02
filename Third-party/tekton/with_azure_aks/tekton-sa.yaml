@@ -1,0 +1,9 @@
+# ServiceAccount used by PipelineRuns so Tekton can inject registry credentials
+# from the Secret below (see README: create acr-dockerconfig in namespace jenkins).
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: tekton-sa
+  namespace: jenkins
+secrets:
+  - name: acr-dockerconfig

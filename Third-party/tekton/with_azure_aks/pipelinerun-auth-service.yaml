@@ -1,0 +1,37 @@
+# Generated from config-pipelinerun-auth-service.yaml — edit that file, then:
+#   python3 render-from-config.py
+apiVersion: tekton.dev/v1beta1
+kind: PipelineRun
+metadata:
+  name: clone-build-push-kaniko
+  namespace: jenkins
+spec:
+  serviceAccountName: tekton-sa
+  pipelineRef:
+    name: clone-build-push-kaniko
+  params:
+    - name: git-url
+      value: "https://github.com/shenekin/auth-service.git"
+    - name: git-revision
+      value: "dev-secret-19044"
+    - name: acr-login-server
+      value: "ekinregistry.azurecr.io"
+    - name: image-repo
+      value: "auth-service"
+    - name: image-tag
+      value: "v1"
+  podTemplate:
+    securityContext:
+      fsGroup: 65532
+  workspaces:
+    - name: shared-data
+      volumeClaimTemplate:
+        spec:
+          accessModes:
+            - ReadWriteOnce
+          resources:
+            requests:
+              storage: 1Gi
+    - name: dockerconfig
+      secret:
+        secretName: acr-dockerconfig-kaniko
