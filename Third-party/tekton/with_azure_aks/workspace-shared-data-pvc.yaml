@@ -1,0 +1,8 @@
+# Used with: tkn pipeline start ... -w name=shared-data,volumeClaimTemplateFile=THIS_FILE
+# Content is the PersistentVolumeClaim spec (VolumeClaimTemplate.spec).
+spec:
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: 1Gi

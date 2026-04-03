@@ -1,0 +1,4 @@
+# Optional: pass with --pod-template=pod-template-fs.yaml so git-clone (UID 65532) can write the PVC.
+# Matches pipelinerun-auth-service.yaml podTemplate.securityContext.
+securityContext:
+  fsGroup: 65532
