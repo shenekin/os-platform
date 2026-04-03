@@ -392,6 +392,20 @@ The value of Tekton: **repeatable builds on the cluster** with the same recipe, 
 
 
 ## 14. tkn pipeline start` (interactive / CLI)
+# Tekton operations (clone-build-push-kaniko)
+## Prerequisites
+- Pipeline `clone-build-push-kaniko` and tasks (`git-clone`, `kaniko`) installed in namespace `jenkins`.
+- Secret `acr-dockerconfig-kaniko` in `jenkins` with valid ACR credentials (`config.json` / `.dockerconfigjson`).
+- Service account `tekton-sa` with permission to run the pipeline.
+## Files in this directory
+| File | Purpose |
+|------|---------|
+| `workspace-shared-data-pvc.yaml` | PVC `spec` for `tkn` workspace `shared-data` (VolumeClaimTemplate). |
+| `pod-template-fs.yaml` | Optional `fsGroup: 65532` for PVC writes (matches `pipelinerun-auth-service.yaml`). |
+## Commands to run
+### Option A: `tkn pipeline start` (interactive / CLI)
+Run from any directory; use absolute paths as below.
+```bash
 tkn pipeline start clone-build-push-kaniko -n jenkins \
   -s tekton-sa \
   -p git-url="https://github.com/shenekin/auth-service.git" \
@@ -402,6 +416,10 @@ tkn pipeline start clone-build-push-kaniko -n jenkins \
   -w name=shared-data,volumeClaimTemplateFile=/developer/IAC/Third-party/tekton/with_azure_aks/workspace-shared-data-pvc.yaml \
   -w name=dockerconfig,secret=acr-dockerconfig-kaniko \
   --pod-template=/developer/IAC/Third-party/tekton/with_azure_aks/pod-template-fs.yaml
+Notes:
+
+volumeClaimTemplateFile must point to a real .yaml / .yml file (not a placeholder). The file must contain a PVC spec (see workspace-shared-data-pvc.yaml).
+Omit --pod-template=... if you do not need fsGroup (drop it if you see no permission errors on the workspace).
 ---
 
 ## 15.  401 / UNAUTHORIZED
