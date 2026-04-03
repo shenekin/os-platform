@@ -390,6 +390,42 @@ The value of Tekton: **repeatable builds on the cluster** with the same recipe, 
 - **Install Tekton, ACR secrets, first-time apply:** **`README.md`** in the same folder.
 - **YAML file list and troubleshooting table:** **`README.md`**.
 
+
+## 14. tkn pipeline start` (interactive / CLI)
+tkn pipeline start clone-build-push-kaniko -n jenkins \
+  -s tekton-sa \
+  -p git-url="https://github.com/shenekin/auth-service.git" \
+  -p git-revision="dev-secret-19044" \
+  -p acr-login-server="ekinregistry.azurecr.io" \
+  -p image-repo="auth-service" \
+  -p image-tag="v2" \
+  -w name=shared-data,volumeClaimTemplateFile=/developer/IAC/Third-party/tekton/with_azure_aks/workspace-shared-data-pvc.yaml \
+  -w name=dockerconfig,secret=acr-dockerconfig-kaniko \
+  --pod-template=/developer/IAC/Third-party/tekton/with_azure_aks/pod-template-fs.yaml
 ---
 
+## 15.  401 / UNAUTHORIZED
+*401 / UNAUTHORIZED:** run **`az acr login`**, recreate **`acr-dockerconfig`** and **`acr-dockerconfig-kaniko`** (see **`README.md`**).
+- **401 / UNAUTHORIZED:** run **`./refresh-acr-secrets.sh`** in the Tekton folder (after **`az login`**), or manually run **`az acr login`** and recreate **`acr-dockerconfig`** and **`acr-dockerconfig-kaniko`** (see **`README.md`** §6.2). Then **`kubectl delete pipelinerun clone-build-push-kaniko -n jenkins`** and **`kubectl apply -f pipelinerun-auth-service.yaml`** again.
+- **No Dockerfile:** ensure **`Dockerfile`** exists at repo **root** (or change Pipeline **`DOCKERFILE`** / **`CONTEXT`**).
+Fix it now
+Log in to Azure (if needed):
+
+az login
+Point kubectl at your AKS cluster (if needed):
+
+az aks get-credentials --resource-group YOUR_RG --name YOUR_AKS
+From your Tekton folder, refresh ACR and push the same credentials into the two secrets Kaniko uses:
+
+cd /developer/IAC/Third-party/tekton/with_azure_aks
+./refresh-acr-secrets.sh
+If your registry short name is not ekinregistry, pass it:
+
+./refresh-acr-secrets.sh YOUR_ACR_SHORT_NAME
+This runs az acr login, then recreates acr-dockerconfig and acr-dockerconfig-kaniko in namespace jenkins, matching README.md §6.2.
+
+Start a new pipeline run so pods do not reuse stale mounts:
+
+kubectl delete pipelinerun clone-build-push-kaniko -n jenkins --ignore-not-found
+kubectl apply -f pipelinerun-auth-service.yaml
 *Document version: written for operators using `/home/ekin/Documents/azure_aks/tekton` with Pipeline `clone-build-push-kaniko` and PipelineRun `clone-build-push-kaniko` in namespace `jenkins`.*
