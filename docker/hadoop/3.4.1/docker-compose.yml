@@ -1,0 +1,77 @@
+#version: "3.8"
+services:
+  namenode:
+    build: .
+    container_name: hadoop-namenode
+    hostname: namenode
+    volumes:
+      - namenode_data:/hadoop/dfs/name
+    ports:
+      - "9870:9870"   # NameNode web UI
+      - "9000:9000"   # HDFS RPC (fs.defaultFS)
+    environment:
+      - SERVICE_ROLE=namenode
+    networks:
+      - hadoop-net
+
+  datanode1:
+    build: .
+    container_name: hadoop-datanode1
+    hostname: datanode1
+    volumes:
+      - datanode1_data:/hadoop/dfs/data
+    environment:
+      - SERVICE_ROLE=datanode
+    networks:
+      - hadoop-net
+
+  datanode2:
+    build: .
+    container_name: hadoop-datanode2
+    hostname: datanode2
+    volumes:
+      - datanode2_data:/hadoop/dfs/data
+    environment:
+      - SERVICE_ROLE=datanode
+    networks:
+      - hadoop-net
+
+  datanode3:
+    build: .
+    container_name: hadoop-datanode3
+    hostname: datanode2
+    volumes:
+      - datanode3_data:/hadoop/dfs/data
+    environment:
+      - SERVICE_ROLE=datanode
+    networks:
+      - hadoop-net
+  resourcemanager:
+    build: .
+    container_name: hadoop-resourcemanager
+    hostname: resourcemanager
+    ports:
+      - "8088:8088"
+    environment:
+      - SERVICE_ROLE=resourcemanager
+    networks:
+      - hadoop-net
+
+  nodemanager1:
+    build: .
+    container_name: hadoop-nodemanager1
+    hostname: nodemanager1
+    environment:
+      - SERVICE_ROLE=nodemanager
+    networks:
+      - hadoop-net
+
+volumes:
+  namenode_data:
+  datanode1_data:
+  datanode2_data:
+  datanode3_data:
+
+networks:
+  hadoop-net:
+    driver: bridge
