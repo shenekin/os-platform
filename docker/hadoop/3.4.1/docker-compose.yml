@@ -1,77 +1,95 @@
-#version: "3.8"
+version: "3.9"
+
 services:
   namenode:
-    build: .
-    container_name: hadoop-namenode
+    image: ekinshen/hadoop:3.4.1
+    container_name: namenode
     hostname: namenode
-    volumes:
-      - namenode_data:/hadoop/dfs/name
     ports:
-      - "9870:9870"   # NameNode web UI
-      - "9000:9000"   # HDFS RPC (fs.defaultFS)
-    environment:
-      - SERVICE_ROLE=namenode
+      - "9870:9870"
+      - "8020:8020"
+    command: >
+      bash -c '
+        if [ ! -f /hadoop/dfs/name/current/VERSION ]; then
+          hdfs namenode -format -force
+        fi
+        exec hdfs namenode
+        '
+    volumes:
+      - namenode-data:/hadoop/dfs/name
+    networks:
+      - hadoop-net
+  resourcemanager:
+    image: ekinshen/hadoop:3.4.1
+    container_name: resourcemanager
+    hostname: resourcemanager
+    depends_on:
+      - namenode
+    ports:
+      - "8088:8088"   # YARN UI
+    command: >
+      bash -c "
+      yarn --daemon start resourcemanager &&
+      tail -f /dev/null
+      "
     networks:
       - hadoop-net
 
   datanode1:
-    build: .
-    container_name: hadoop-datanode1
+    image: ekinshen/hadoop:3.4.1
+    container_name: datanode1
     hostname: datanode1
-    volumes:
-      - datanode1_data:/hadoop/dfs/data
-    environment:
-      - SERVICE_ROLE=datanode
+    depends_on:
+      - namenode
+    command: >
+      bash -c "
+      hdfs --daemon start datanode &&
+      yarn --daemon start nodemanager &&
+      tail -f /dev/null
+      "
     networks:
       - hadoop-net
+    volumes:
+      - datanode1-data:/hadoop/dfs/data
 
   datanode2:
-    build: .
-    container_name: hadoop-datanode2
+    image: ekinshen/hadoop:3.4.1
+    container_name: datanode2
     hostname: datanode2
-    volumes:
-      - datanode2_data:/hadoop/dfs/data
-    environment:
-      - SERVICE_ROLE=datanode
+    depends_on:
+      - namenode
+    command: >
+      bash -c "
+      hdfs --daemon start datanode &&
+      yarn --daemon start nodemanager &&
+      tail -f /dev/null
+      "
     networks:
       - hadoop-net
+    volumes:
+      - datanode2-data:/hadoop/dfs/data
 
   datanode3:
-    build: .
-    container_name: hadoop-datanode3
-    hostname: datanode2
+    image: ekinshen/hadoop:3.4.1
+    container_name: datanode3
+    hostname: datanode3
+    depends_on:
+      - namenode
+    command: >
+      bash -c "
+      hdfs --daemon start datanode &&
+      yarn --daemon start nodemanager &&
+      tail -f /dev/null
+      "
+    networks:
+      - hadoop-net
     volumes:
-      - datanode3_data:/hadoop/dfs/data
-    environment:
-      - SERVICE_ROLE=datanode
-    networks:
-      - hadoop-net
-  resourcemanager:
-    build: .
-    container_name: hadoop-resourcemanager
-    hostname: resourcemanager
-    ports:
-      - "8088:8088"
-    environment:
-      - SERVICE_ROLE=resourcemanager
-    networks:
-      - hadoop-net
-
-  nodemanager1:
-    build: .
-    container_name: hadoop-nodemanager1
-    hostname: nodemanager1
-    environment:
-      - SERVICE_ROLE=nodemanager
-    networks:
-      - hadoop-net
-
-volumes:
-  namenode_data:
-  datanode1_data:
-  datanode2_data:
-  datanode3_data:
-
+      - datanode3-data:/hadoop/dfs/data
 networks:
   hadoop-net:
-    driver: bridge
+
+volumes:
+  namenode-data:
+  datanode1-data:
+  datanode2-data:
+  datanode3-data:

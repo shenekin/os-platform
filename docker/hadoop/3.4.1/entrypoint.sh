@@ -1,15 +1,38 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-# Ensure ssh runtime dir exists (required by sshd)
+# ---- SSH setup ----
 mkdir -p /run/sshd
-
-# Ensure host keys exist
 ssh-keygen -A
 
-# Keep root login usable if you rely on it (optional)
-chmod 700 /root/.ssh || true
-chmod 600 /root/.ssh/authorized_keys 2>/dev/null || true
+# ---- Hadoop env ----
+: "${HADOOP_HOME:=/opt/hadoop-3.4.1}"
+export HADOOP_HOME
+export HADOOP_CONF_DIR="${HADOOP_HOME}/etc/hadoop"
+export PATH="${PATH}:${HADOOP_HOME}/bin:${HADOOP_HOME}/sbin"
 
-# Start sshd in foreground (keeps container alive)
-exec /usr/sbin/sshd -D -e
+# Disable niceness changes to avoid:
+# "ERROR: Cannot set priority of namenode process ..."
+if ! grep -q '^export HADOOP_NICENESS=' "${HADOOP_CONF_DIR}/hadoop-env.sh"; then
+  echo 'export HADOOP_NICENESS=0' >> "${HADOOP_CONF_DIR}/hadoop-env.sh"
+else
+  sed -i 's/^export HADOOP_NICENESS=.*/export HADOOP_NICENESS=0/' "${HADOOP_CONF_DIR}/hadoop-env.sh"
+fi
+
+# Ensure Hadoop tmp/log dirs exist and are writable
+mkdir -p /tmp/hadoop-root /tmp/hadoop-hadoop
+chown -R hadoop:hadoop /tmp/hadoop-hadoop /opt/hadoop-3.4.1
+
+# Format NameNode once (first boot only)
+if [ ! -d /tmp/hadoop-hadoop/dfs/name/current ]; then
+  sudo -u hadoop "${HADOOP_HOME}/bin/hdfs" namenode -format -force -nonInteractive
+fi
+
+# Start SSH daemon
+/usr/sbin/sshd
+
+# Start HDFS daemons
+sudo -u hadoop "${HADOOP_HOME}/sbin/start-dfs.sh"
+
+# Keep container alive and stream NameNode logs
+exec tail -F "${HADOOP_HOME}"/logs/*namenode*.log
