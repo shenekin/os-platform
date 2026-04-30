@@ -1,8 +1,6 @@
-version: "3.9"
-
 services:
   namenode:
-    image: ekinshen/hadoop:3.4.1
+    image: ekinshen/hadoop-with-configuration:3.4.1
     container_name: namenode
     hostname: namenode
     ports:
@@ -10,81 +8,179 @@ services:
       - "8020:8020"
     command: >
       bash -c '
-        if [ ! -f /hadoop/dfs/name/current/VERSION ]; then
-          hdfs namenode -format -force
-        fi
+        rm -rf /hadoop/dfs/name/* 2>/dev/null || true
+        hdfs namenode -format -force -nonInteractive
         exec hdfs namenode
-        '
+      '
     volumes:
       - namenode-data:/hadoop/dfs/name
     networks:
       - hadoop-net
+    environment:
+      - HDFS_NAMENODE_USER=root
+      - HDFS_DATANODE_USER=root
+      - HDFS_SECONDARYNAMENODE_USER=root
+      - YARN_RESOURCEMANAGER_USER=root
+      - YARN_NODEMANAGER_USER=root
+    healthcheck:
+      test: ["CMD", "hdfs", "dfsadmin", "-report"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
   resourcemanager:
-    image: ekinshen/hadoop:3.4.1
+    image: ekinshen/hadoop-with-configuration:3.4.1
     container_name: resourcemanager
     hostname: resourcemanager
     depends_on:
-      - namenode
+      namenode:
+        condition: service_healthy
     ports:
-      - "8088:8088"   # YARN UI
+      - "8088:8088"
     command: >
       bash -c "
-      yarn --daemon start resourcemanager &&
-      tail -f /dev/null
+        exec yarn resourcemanager
       "
     networks:
       - hadoop-net
+    environment:
+      - HDFS_NAMENODE_USER=root
+      - HDFS_DATANODE_USER=root
+      - HDFS_SECONDARYNAMENODE_USER=root
+      - YARN_RESOURCEMANAGER_USER=root
+      - YARN_NODEMANAGER_USER=root
+    healthcheck:
+      test: ["CMD", "yarn", "node", "-list"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
 
   datanode1:
-    image: ekinshen/hadoop:3.4.1
+    image: ekinshen/hadoop-with-configuration:3.4.1
     container_name: datanode1
     hostname: datanode1
     depends_on:
-      - namenode
+      namenode:
+        condition: service_healthy
     command: >
       bash -c "
-      hdfs --daemon start datanode &&
-      yarn --daemon start nodemanager &&
-      tail -f /dev/null
+        exec hdfs datanode
       "
     networks:
       - hadoop-net
     volumes:
       - datanode1-data:/hadoop/dfs/data
+    environment:
+      - HDFS_NAMENODE_USER=root
+      - HDFS_DATANODE_USER=root
+      - HDFS_SECONDARYNAMENODE_USER=root
+      - YARN_RESOURCEMANAGER_USER=root
+      - YARN_NODEMANAGER_USER=root
 
   datanode2:
-    image: ekinshen/hadoop:3.4.1
+    image: ekinshen/hadoop-with-configuration:3.4.1
     container_name: datanode2
     hostname: datanode2
     depends_on:
-      - namenode
+      namenode:
+        condition: service_healthy
     command: >
       bash -c "
-      hdfs --daemon start datanode &&
-      yarn --daemon start nodemanager &&
-      tail -f /dev/null
+        exec hdfs datanode
       "
     networks:
       - hadoop-net
     volumes:
       - datanode2-data:/hadoop/dfs/data
+    environment:
+      - HDFS_NAMENODE_USER=root
+      - HDFS_DATANODE_USER=root
+      - HDFS_SECONDARYNAMENODE_USER=root
+      - YARN_RESOURCEMANAGER_USER=root
+      - YARN_NODEMANAGER_USER=root
 
   datanode3:
-    image: ekinshen/hadoop:3.4.1
+    image: ekinshen/hadoop-with-configuration:3.4.1
     container_name: datanode3
     hostname: datanode3
     depends_on:
-      - namenode
+      namenode:
+        condition: service_healthy
     command: >
       bash -c "
-      hdfs --daemon start datanode &&
-      yarn --daemon start nodemanager &&
-      tail -f /dev/null
+        exec hdfs datanode
       "
     networks:
       - hadoop-net
     volumes:
       - datanode3-data:/hadoop/dfs/data
+    environment:
+      - HDFS_NAMENODE_USER=root
+      - HDFS_DATANODE_USER=root
+      - HDFS_SECONDARYNAMENODE_USER=root
+      - YARN_RESOURCEMANAGER_USER=root
+      - YARN_NODEMANAGER_USER=root
+
+  nodemanager1:
+    image: ekinshen/hadoop-with-configuration:3.4.1
+    container_name: nodemanager1
+    hostname: nodemanager1
+    depends_on:
+      resourcemanager:
+        condition: service_healthy
+    command: >
+      bash -c "
+        exec yarn nodemanager
+      "
+    networks:
+      - hadoop-net
+    environment:
+      - HDFS_NAMENODE_USER=root
+      - HDFS_DATANODE_USER=root
+      - HDFS_SECONDARYNAMENODE_USER=root
+      - YARN_RESOURCEMANAGER_USER=root
+      - YARN_NODEMANAGER_USER=root
+
+  nodemanager2:
+    image: ekinshen/hadoop-with-configuration:3.4.1
+    container_name: nodemanager2
+    hostname: nodemanager2
+    depends_on:
+      resourcemanager:
+        condition: service_healthy
+    command: >
+      bash -c "
+        exec yarn nodemanager
+      "
+    networks:
+      - hadoop-net
+    environment:
+      - HDFS_NAMENODE_USER=root
+      - HDFS_DATANODE_USER=root
+      - HDFS_SECONDARYNAMENODE_USER=root
+      - YARN_RESOURCEMANAGER_USER=root
+      - YARN_NODEMANAGER_USER=root
+
+  nodemanager3:
+    image: ekinshen/hadoop-with-configuration:3.4.1
+    container_name: nodemanager3
+    hostname: nodemanager3
+    depends_on:
+      resourcemanager:
+        condition: service_healthy
+    command: >
+      bash -c "
+        exec yarn nodemanager
+      "
+    networks:
+      - hadoop-net
+    environment:
+      - HDFS_NAMENODE_USER=root
+      - HDFS_DATANODE_USER=root
+      - HDFS_SECONDARYNAMENODE_USER=root
+      - YARN_RESOURCEMANAGER_USER=root
+      - YARN_NODEMANAGER_USER=root
+
 networks:
   hadoop-net:
 

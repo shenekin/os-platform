@@ -1,4 +1,4 @@
-FROM eclipse-temurin:11-jdk
+FROM ekinshen/hadoop:3.4.1
 
 # Base utilities + SSH (Hadoop pseudo-distributed setup)
 RUN apt-get update && \
@@ -19,16 +19,12 @@ ENV HADOOP_HOME=/opt/hadoop-3.4.1
 ENV HADOOP_CONF_DIR=${HADOOP_HOME}/etc/hadoop
 ENV PATH=${PATH}:${HADOOP_HOME}/bin:${HADOOP_HOME}/sbin
 
-# Hadoop user
-RUN useradd -m -s /bin/bash hadoop && \
-    chown -R hadoop:hadoop /opt/hadoop-3.4.1 && \
-    echo "hadoop ALL=(ALL) NOPASSWD:ALL" >> /etc/sudoers
 
 # SSH key setup for hadoop user
 RUN mkdir -p /home/hadoop/.ssh && \
     chown -R hadoop:hadoop /home/hadoop/.ssh && \
     chmod 700 /home/hadoop/.ssh && \
-    sudo -u hadoop ssh-keygen -t rsa -N "" -f /home/hadoop/.ssh/id_rsa && \
+    sudo -u hadoop ssh-keygen -t rsa -N "" -f /home/hadoop/.ssh/id_rsa -y && \
     cat /home/hadoop/.ssh/id_rsa.pub >> /home/hadoop/.ssh/authorized_keys && \
     chown hadoop:hadoop /home/hadoop/.ssh/authorized_keys && \
     chmod 600 /home/hadoop/.ssh/authorized_keys
@@ -36,6 +32,7 @@ RUN mkdir -p /home/hadoop/.ssh && \
 COPY core-site.xml ${HADOOP_HOME}/etc/hadoop/core-site.xml
 COPY hdfs-site.xml ${HADOOP_HOME}/etc/hadoop/hdfs-site.xml
 COPY workers ${HADOOP_HOME}/etc/hadoop/workers
+COPY yarn-site.xml ${HADOOP_HOME}/etc/hadoop/yarn-site.xml
 # optional but recommended: disable renice warning
 RUN echo 'export HADOOP_NICENESS=' >> ${HADOOP_HOME}/etc/hadoop/hadoop-env.sh
 
