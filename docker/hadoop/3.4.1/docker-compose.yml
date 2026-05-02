@@ -6,6 +6,7 @@ services:
     ports:
       - "9870:9870"
       - "8020:8020"
+      - "9000:9000"
     command: >
       bash -c '
         rm -rf /hadoop/dfs/name/* 2>/dev/null || true

@@ -219,7 +219,10 @@ export HADOOP_OS_TYPE=${HADOOP_OS_TYPE:-$(uname -s)}
 
 # Default process priority level
 # Note that sub-processes will also run at this level!
-# export HADOOP_NICENESS=0
+# export HADOOP_NICENESS=
+
+# Suppress native library warning
+export LD_LIBRARY_PATH=$HADOOP_HOME/lib/native:$LD_LIBRARY_PATH0
 
 # Default name for the service level authorization file
 # Java property: hadoop.policy.file

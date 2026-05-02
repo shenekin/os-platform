@@ -1,0 +1,5 @@
+# mkdir -p: create destination folder if it does not exist
+# find ... -type f -iname "*.pdf": recursively find all PDF files (case-insensitive)
+# cp -n: copy files without overwriting existing files with the same name
+
+mkdir -p "/path/to/all-pdfs" && find "/path/to/source" -type f -iname "*.pdf" -exec cp -n "{}" "/path/to/all-pdfs/" \;
