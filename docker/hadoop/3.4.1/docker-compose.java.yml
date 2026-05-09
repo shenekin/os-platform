@@ -1,0 +1,22 @@
+# docker-compose.java.yml — Java client attached to existing hadoop-net
+services:
+  my-java:
+    image: eclipse-temurin:18-jdk
+    container_name: my-java
+    hostname: my-java
+    network_mode: host
+    working_dir: /work
+    volumes:
+      - ./my-app:/work
+      # Same directory as this compose file (3.4.1/)
+      - ./core-site.xml:/etc/hadoop/conf/core-site.xml:ro
+      - ./hdfs-site.xml:/etc/hadoop/conf/hdfs-site.xml:ro
+      - ./hdfs-client-config.xml:/etc/hadoop/conf/hdfs-client-config.xml:ro
+    environment:
+      HADOOP_CONF_DIR: /etc/hadoop/conf
+      # TZ: UTC
+    command: ["sleep", "infinity"]
+    # Or run the app directly with debug enabled:
+    # command: ["java", "-agentlib:jdwp=transport=dt_socket,server=y,suspend=n,address=*:5005", "-jar", "/work/your-app.jar"]
+
+networks:

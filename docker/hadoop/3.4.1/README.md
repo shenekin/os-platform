@@ -1,257 +1,163 @@
-# Hadoop 3.4.1 Docker Cluster
+# Hadoop 3.4.1 Cluster with Host Network
 
-Production-ready Hadoop 3.4.1 cluster running in Docker with HDFS, YARN, and WebHDFS support.
+A Docker-based Hadoop HDFS cluster using `ekinshen/hadoop-with-configuration:3.4.1` with host network mode enabled.
 
-## Cluster Architecture
+## Architecture
 
-- **NameNode**: HDFS metadata server
-- **3 DataNodes**: HDFS data storage (512 GB each)
-- **ResourceManager**: YARN job scheduler
-- **3 NodeManagers**: YARN task executors
+- **NameNode**: Runs on `localhost:9000` (RPC) and `localhost:9870` (Web UI)
+- **DataNodes**: Two datanodes for distributed storage, connected via host network
+- **Storage**: ~1TB aggregate capacity across all datanodes
+- **Configuration**: Automatically configured for localhost addresses
 
 ## Quick Start
 
 ### Prerequisites
-- Docker & Docker Compose installed
-- 2+ GB available RAM
 
-### 1. Build the Image
+- Docker and Docker Compose installed
+- Port 9000, 9866, 9870 available on localhost
 
-```bash
-docker build -t ekinshen/hadoop-with-configuration:3.4.1 .
-```
-
-### 2. Start the Cluster
+### Start Cluster
 
 ```bash
 docker compose up -d
 ```
 
-Wait for all containers to start:
+Wait ~60 seconds for full initialization. Check status:
+
 ```bash
 docker compose ps
 ```
 
-### 3. Verify Cluster Health
+All three containers should show `Up`:
 
-Check HDFS status:
-```bash
-docker compose exec namenode hdfs dfsadmin -report
+```
+CONTAINER ID   STATUS                 NAMES
+xxx            Up About a minute      hadoop-namenode
+yyy            Up About a minute      hadoop-datanode1
+zzz            Up About a minute      hadoop-datanode2
 ```
 
-Check YARN nodes:
-```bash
-docker compose exec resourcemanager yarn node -list
-```
-
-## Web UIs
-
-- **NameNode (HDFS)**: http://localhost:9870
-- **ResourceManager (YARN)**: http://localhost:8088
-
-## File Operations
-
-### Upload File via WebHDFS API
-
-```bash
-# Using curl with redirect following
-curl -X PUT -T <local-file> "http://localhost:9870/webhdfs/v1/uploads/<filename>?op=CREATE&user.name=root&overwrite=true" -L
-```
-
-### Upload via Docker
-
-```bash
-docker compose exec namenode bash -c "cat /path/to/file | hdfs dfs -put - /uploads/filename"
-```
-
-### List Files
-
-```bash
-docker compose exec namenode hdfs dfs -ls /
-```
-
-### View File Contents
-
-```bash
-docker compose exec namenode hdfs dfs -cat /path/to/file
-```
-
-### Create Directory
-
-```bash
-docker compose exec namenode hdfs dfs -mkdir -p /mydir
-```
-
-### Delete File/Directory
-
-```bash
-docker compose exec namenode hdfs dfs -rm -r /path
-```
-
-## Common Operations
-
-### Check NameNode Logs
-
-```bash
-docker compose logs namenode | tail -50
-```
-
-### Check DataNode Logs
-
-```bash
-docker compose logs datanode1 | tail -50
-```
-
-### Access Container Shell
-
-```bash
-docker compose exec namenode bash
-```
-
-### Copy File from Container
-
-```bash
-docker compose exec namenode hdfs dfs -get /hdfs/path /tmp/local/path
-```
-
-### Run Hadoop Command
-
-```bash
-docker compose exec namenode hadoop version
-docker compose exec namenode hdfs dfs -stat /path
-```
-
-## Cluster Management
-
-### Stop All Containers
-
-```bash
-docker compose stop
-```
-
-### Start Cluster
-
-```bash
-docker compose start
-```
-
-### Restart Cluster (preserve data)
-
-```bash
-docker compose restart
-```
-
-### Destroy Cluster (keep volumes)
+### Stop Cluster
 
 ```bash
 docker compose down
 ```
 
-### Destroy Everything (reset cluster)
+To remove all data and volumes:
 
 ```bash
 docker compose down -v
 ```
 
-## Configuration Files
+## Access & Commands
 
-- **core-site.xml**: Hadoop core settings (proxy users, default filesystem)
-- **hdfs-site.xml**: HDFS settings (replication, WebHDFS, permissions)
-- **yarn-site.xml**: YARN/ResourceManager addressing
-- **mapred-site.xml**: MapReduce settings
-- **workers**: DataNode hostnames
+### Web UI
 
-Edit config files and rebuild:
+Open in browser:
+- **NameNode UI**: http://localhost:9870
+
+### Check Cluster Health
+
 ```bash
-docker build -t ekinshen/hadoop-with-configuration:3.4.1 .
-docker compose down -v
-docker compose up -d
+docker exec hadoop-namenode bash -c 'source /opt/hadoop-3.4.1/etc/hadoop/hadoop-env.sh && /opt/hadoop-3.4.1/bin/hdfs dfsadmin -report'
 ```
 
-## Performance Tuning
+### Upload Test File
 
-### Increase Memory
-
-Edit `docker-compose.yml` and add to each service:
-```yaml
-environment:
-  - HADOOP_HEAPSIZE=4096
+```bash
+echo "test data" | docker exec -i hadoop-namenode bash -c 'source /opt/hadoop-3.4.1/etc/hadoop/hadoop-env.sh && hdfs dfs -put - /test.txt'
 ```
 
-### Increase Replication Factor
+### List HDFS Files
 
-Edit `hdfs-site.xml`:
-```xml
-<property>
-  <name>dfs.replication</name>
-  <value>2</value>
-</property>
+```bash
+docker exec hadoop-namenode bash -c 'source /opt/hadoop-3.4.1/etc/hadoop/hadoop-env.sh && hdfs dfs -ls /'
+```
+
+### Read File from HDFS
+
+```bash
+docker exec hadoop-namenode bash -c 'source /opt/hadoop-3.4.1/etc/hadoop/hadoop-env.sh && hdfs dfs -cat /test.txt'
+```
+
+### View Logs
+
+NameNode logs:
+```bash
+docker logs hadoop-namenode
+```
+
+DataNode logs:
+```bash
+docker logs hadoop-datanode1
+docker logs hadoop-datanode2
+```
+
+## Configuration
+
+The cluster is pre-configured for host network mode:
+
+- **core-site.xml**: NameNode address set to `hdfs://127.0.0.1:9000`
+- **hdfs-site.xml**: NameNode RPC on `127.0.0.1:9000`, Web UI on `127.0.0.1:9870`
+- **Replication factor**: 3 (default)
+- **Permissions**: Disabled for ease of testing
+
+## Volumes
+
+Data persists in Docker volumes:
+
+- `namenode-data`: NameNode metadata
+- `datanode1-data`: DataNode 1 storage
+- `datanode2-data`: DataNode 2 storage
+
+View volumes:
+```bash
+docker volume ls | grep hadoop
 ```
 
 ## Troubleshooting
 
-### DataNodes Not Registering
+### Containers not starting
 
-Clear volumes and restart:
+Check logs:
+```bash
+docker compose logs -f
+```
+
+Common issues:
+- Port 9000/9870 already in use: Stop conflicting services or change ports
+- Slow system: Wait 2+ minutes for initialization (especially first run)
+
+### DataNode not registering
+
+Check datanode logs:
+```bash
+docker logs hadoop-datanode1
+```
+
+If permission errors, ensure data directories are writable. The `hadoop-entrypoint.sh` script handles this automatically.
+
+### HDFS commands fail with "namenode: Name or service not known"
+
+This indicates a stale configuration. Restart the cluster:
 ```bash
 docker compose down -v
 docker compose up -d
 ```
 
-### Permission Denied Errors
+## Files
 
-Permissions are disabled by default (`dfs.permissions.enabled=false`). To re-enable, edit `hdfs-site.xml` and change to `true`, then rebuild.
+- `docker-compose.yml`: Cluster definition with 3 services (namenode + 2 datanodes)
+- `hadoop-entrypoint.sh`: Initialization script that patches configs for localhost and sets permissions
+- `README.md`: This file
 
-### Out of Disk Space
+## Performance Notes
 
-Check usage:
-```bash
-docker system df
-```
+- First startup takes ~60 seconds (JAVA_HOME setup, namenode formatting)
+- Subsequent restarts take ~15 seconds
+- Host network mode provides near-native I/O performance
+- Replication factor 3 reduces usable space by 66%
 
-Clean up:
-```bash
-docker system prune
-```
+## License
 
-### Slow Upload/Download
-
-- Increase container memory
-- Check network bandwidth
-- Verify replication factor (lower = faster)
-
-## API Examples
-
-### List HDFS Directory (JSON)
-
-```bash
-curl -s "http://localhost:9870/webhdfs/v1/?op=LISTSTATUS" | jq .
-```
-
-### Get File Status
-
-```bash
-curl -s "http://localhost:9870/webhdfs/v1/path/to/file?op=GETFILESTATUS" | jq .
-```
-
-### Create Empty File
-
-```bash
-curl -X PUT "http://localhost:9870/webhdfs/v1/new/file.txt?op=CREATE&user.name=root" -L
-```
-
-## Notes
-
-- Permissions checks disabled for development (`dfs.permissions.enabled=false`)
-- WebHDFS enabled on port 9870
-- HTTP only (no HTTPS)
-- All containers run as root user
-- Data persists in Docker volumes
-
-## Cleanup
-
-Remove cluster and free resources:
-```bash
-docker compose down -v
-docker rmi ekinshen/hadoop-with-configuration:3.4.1
-```
+Uses ekinshen/hadoop-with-configuration:3.4.1 image. Apache Hadoop licensed under Apache License 2.0.

@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<configuration>
+  <!-- Socket timeout for DataNode connections (prevent debugger hangs) -->
+  <property>
+    <name>dfs.socket.timeout</name>
+    <value>30000</value>
+    <description>Socket timeout for all connections (30 seconds)</description>
+  </property>
+  
+  <!-- Datanode connection timeout -->
+  <property>
+    <name>dfs.datanode.socket.write.timeout</name>
+    <value>30000</value>
+    <description>DataNode socket write timeout</description>
+  </property>
+  
+  <!-- Client read timeout -->
+  <property>
+    <name>ipc.client.connect.timeout</name>
+    <value>10000</value>
+    <description>Client IPC connect timeout (10 seconds)</description>
+  </property>
+</configuration>

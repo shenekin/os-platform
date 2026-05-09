@@ -3,190 +3,52 @@ services:
     image: ekinshen/hadoop-with-configuration:3.4.1
     container_name: namenode
     hostname: namenode
-    ports:
-      - "9870:9870"
-      - "8020:8020"
-      - "9000:9000"
-    command: >
-      bash -c '
-        rm -rf /hadoop/dfs/name/* 2>/dev/null || true
-        hdfs namenode -format -force -nonInteractive
-        exec hdfs namenode
-      '
+    network_mode: host
+    environment:
+      - HADOOP_NODE_TYPE=namenode
+      - HDFS_NAMENODE_HOSTNAME=localhost
+      - JAVA_HOME=/opt/java/openjdk
     volumes:
       - namenode-data:/hadoop/dfs/name
-    networks:
-      - hadoop-net
-    environment:
-      - HDFS_NAMENODE_USER=root
-      - HDFS_DATANODE_USER=root
-      - HDFS_SECONDARYNAMENODE_USER=root
-      - YARN_RESOURCEMANAGER_USER=root
-      - YARN_NODEMANAGER_USER=root
-    healthcheck:
-      test: ["CMD", "hdfs", "dfsadmin", "-report"]
-      interval: 10s
-      timeout: 5s
-      retries: 5
-
-  resourcemanager:
-    image: ekinshen/hadoop-with-configuration:3.4.1
-    container_name: resourcemanager
-    hostname: resourcemanager
-    depends_on:
-      namenode:
-        condition: service_healthy
-    ports:
-      - "8088:8088"
-    command: >
-      bash -c "
-        exec yarn resourcemanager
-      "
-    networks:
-      - hadoop-net
-    environment:
-      - HDFS_NAMENODE_USER=root
-      - HDFS_DATANODE_USER=root
-      - HDFS_SECONDARYNAMENODE_USER=root
-      - YARN_RESOURCEMANAGER_USER=root
-      - YARN_NODEMANAGER_USER=root
-    healthcheck:
-      test: ["CMD", "yarn", "node", "-list"]
-      interval: 10s
-      timeout: 5s
-      retries: 5
+      - ./hadoop-entrypoint.sh:/hadoop-entrypoint.sh:ro
+    entrypoint: /hadoop-entrypoint.sh
+    restart: unless-stopped
 
   datanode1:
     image: ekinshen/hadoop-with-configuration:3.4.1
     container_name: datanode1
     hostname: datanode1
-    depends_on:
-      namenode:
-        condition: service_healthy
-    command: >
-      bash -c "
-        exec hdfs datanode
-      "
-    networks:
-      - hadoop-net
+    network_mode: host
+    environment:
+      - HADOOP_NODE_TYPE=datanode
+      - HDFS_NAMENODE_HOSTNAME=localhost
+      - JAVA_HOME=/opt/java/openjdk
     volumes:
       - datanode1-data:/hadoop/dfs/data
-    environment:
-      - HDFS_NAMENODE_USER=root
-      - HDFS_DATANODE_USER=root
-      - HDFS_SECONDARYNAMENODE_USER=root
-      - YARN_RESOURCEMANAGER_USER=root
-      - YARN_NODEMANAGER_USER=root
+      - ./hadoop-entrypoint.sh:/hadoop-entrypoint.sh:ro
+    entrypoint: /hadoop-entrypoint.sh
+    depends_on:
+      - namenode
+    restart: unless-stopped
 
   datanode2:
     image: ekinshen/hadoop-with-configuration:3.4.1
     container_name: datanode2
     hostname: datanode2
-    depends_on:
-      namenode:
-        condition: service_healthy
-    command: >
-      bash -c "
-        exec hdfs datanode
-      "
-    networks:
-      - hadoop-net
+    network_mode: host
+    environment:
+      - HADOOP_NODE_TYPE=datanode
+      - HDFS_NAMENODE_HOSTNAME=localhost
+      - JAVA_HOME=/opt/java/openjdk
     volumes:
       - datanode2-data:/hadoop/dfs/data
-    environment:
-      - HDFS_NAMENODE_USER=root
-      - HDFS_DATANODE_USER=root
-      - HDFS_SECONDARYNAMENODE_USER=root
-      - YARN_RESOURCEMANAGER_USER=root
-      - YARN_NODEMANAGER_USER=root
-
-  datanode3:
-    image: ekinshen/hadoop-with-configuration:3.4.1
-    container_name: datanode3
-    hostname: datanode3
+      - ./hadoop-entrypoint.sh:/hadoop-entrypoint.sh:ro
+    entrypoint: /hadoop-entrypoint.sh
     depends_on:
-      namenode:
-        condition: service_healthy
-    command: >
-      bash -c "
-        exec hdfs datanode
-      "
-    networks:
-      - hadoop-net
-    volumes:
-      - datanode3-data:/hadoop/dfs/data
-    environment:
-      - HDFS_NAMENODE_USER=root
-      - HDFS_DATANODE_USER=root
-      - HDFS_SECONDARYNAMENODE_USER=root
-      - YARN_RESOURCEMANAGER_USER=root
-      - YARN_NODEMANAGER_USER=root
-
-  nodemanager1:
-    image: ekinshen/hadoop-with-configuration:3.4.1
-    container_name: nodemanager1
-    hostname: nodemanager1
-    depends_on:
-      resourcemanager:
-        condition: service_healthy
-    command: >
-      bash -c "
-        exec yarn nodemanager
-      "
-    networks:
-      - hadoop-net
-    environment:
-      - HDFS_NAMENODE_USER=root
-      - HDFS_DATANODE_USER=root
-      - HDFS_SECONDARYNAMENODE_USER=root
-      - YARN_RESOURCEMANAGER_USER=root
-      - YARN_NODEMANAGER_USER=root
-
-  nodemanager2:
-    image: ekinshen/hadoop-with-configuration:3.4.1
-    container_name: nodemanager2
-    hostname: nodemanager2
-    depends_on:
-      resourcemanager:
-        condition: service_healthy
-    command: >
-      bash -c "
-        exec yarn nodemanager
-      "
-    networks:
-      - hadoop-net
-    environment:
-      - HDFS_NAMENODE_USER=root
-      - HDFS_DATANODE_USER=root
-      - HDFS_SECONDARYNAMENODE_USER=root
-      - YARN_RESOURCEMANAGER_USER=root
-      - YARN_NODEMANAGER_USER=root
-
-  nodemanager3:
-    image: ekinshen/hadoop-with-configuration:3.4.1
-    container_name: nodemanager3
-    hostname: nodemanager3
-    depends_on:
-      resourcemanager:
-        condition: service_healthy
-    command: >
-      bash -c "
-        exec yarn nodemanager
-      "
-    networks:
-      - hadoop-net
-    environment:
-      - HDFS_NAMENODE_USER=root
-      - HDFS_DATANODE_USER=root
-      - HDFS_SECONDARYNAMENODE_USER=root
-      - YARN_RESOURCEMANAGER_USER=root
-      - YARN_NODEMANAGER_USER=root
-
-networks:
-  hadoop-net:
+      - namenode
+    restart: unless-stopped
 
 volumes:
   namenode-data:
   datanode1-data:
   datanode2-data:
-  datanode3-data:
