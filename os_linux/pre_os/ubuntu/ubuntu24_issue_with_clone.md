@@ -189,6 +189,11 @@ ip a | grep link/ether
 ls /etc/ssh/ssh_host_ecdsa_key.pub
 blkid
 ```
+enable ssh remote connection
+sed -i -e 's/^#\?PermitRootLogin.*/PermitRootLogin yes/'        -e 's/^#\?PasswordAuthentication.*/PasswordAuthentication yes/' /etc/ssh/sshd_config
+timedatectl set-timezone Asia/Shanghai
+timedatectl
+systemctl restart sshd
 
 ### 常见坑
 1. 源机器没关机直接克隆 → machine-id被复制，两台机器id一样。
