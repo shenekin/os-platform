@@ -170,6 +170,13 @@ brew install openssl@3 readline sqlite3 xz zlib tcl-tk
 export PYENV_ROOT="$HOME/.pyenv"
 export PATH="$PYENV_ROOT/bin:$PATH"
 
+# Add the floolowing lines to ~.zshrc if you want login shells to know where pyenv lives
+export PYENV_ROOT="$HOME/.pyenv"
+command -v pyenv >/dev/null || export PATH="$PYENV_ROOT/bin:$PATH"
+eval "$(pyenv init -)"
+eval "$(pyenv virtualenv-init -)"
+
+
 # Add the following lines to ~/.zshrc for interactive shell initialization.
 eval "$(pyenv init --path)"
 eval "$(pyenv init -)"
