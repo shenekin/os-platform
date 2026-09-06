@@ -271,7 +271,7 @@ python -m pip list | grep ansible-core
 
 ```bash
 # Deactivate the current virtualenv if it is active.
-pyen activate
+pyenv activate
 
 pyenv deactivate
 # switch to global pyenv
@@ -281,6 +281,12 @@ echo $PYENV_VIRTUAL_ENV
 echo $PYENV_VERSION
 # Check all env variables
 env | grep PYENV
+#Check ansible install evn
+
+pyenv prefix ansible-2.21-env
+#Activate ansible pyenv manual
+source ~/.pyenv/versions/ansible-2.21-env/bin/activate
+
 
 # Remove the dedicated environment when a clean rebuild is needed.
 pyenv virtualenv-delete ansible-2.21-env
