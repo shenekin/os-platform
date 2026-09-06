@@ -46,3 +46,99 @@ Warning: this will remove your uncommitted changes
 
 git reset --hard
 git pull
+
+
+checkout <branch-name>
+
+
+or (newer syntax):
+
+
+git switch <branch-name>
+
+
+Example:
+
+git switch main
+git switch develop
+git switch feature/new-feature
+
+
+Create and Switch to a New Branch:
+
+
+git checkout -b <new-branch-name>
+
+
+or:
+
+
+git switch -c <new-branch-name>
+
+
+View All Branches:
+
+
+# Local branches only
+git branch
+
+# All branches (local + remote)
+git branch -a
+
+
+Common Workflow:
+
+
+# See what branch you're on
+git branch
+
+# Switch to another branch
+git switch main
+
+
+Switch to an Existing Branch:
+
+
+git switch <branch-name>
+
+
+or (older syntax):
+
+
+git checkout <branch-name>
+
+
+Example:
+
+
+git switch main
+git switch develop
+git switch feature/login
+
+
+Create and Switch to a New Branch:
+
+
+git switch -c <new-branch-name>
+
+
+or:
+
+
+git checkout -b <new-branch-name>
+
+
+View All Branches:
+
+
+# Local branches only
+git branch
+
+# All branches (local + remote)
+git branch -a
+
+# Remote branches only
+git branch -r
+
+
+Common Workflow:

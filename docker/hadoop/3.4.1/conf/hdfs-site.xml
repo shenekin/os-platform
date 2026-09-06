@@ -1,48 +1,92 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <configuration>
+  <!-- Replication factor for HA setup with 3 datanodes -->
   <property>
     <name>dfs.replication</name>
-    <value>1</value>
+    <value>3</value>
   </property>
 
+  <!-- NameNode storage locations -->
   <property>
     <name>dfs.namenode.name.dir</name>
     <value>file:///hadoop/dfs/name</value>
   </property>
+
+  <!-- DataNode storage locations -->
   <property>
     <name>dfs.datanode.data.dir</name>
     <value>file:///hadoop/dfs/data</value>
   </property>
 
+  <!-- NameNode RPC server address and port -->
   <property>
     <name>dfs.namenode.rpc-address</name>
-    <value>192.168.101.6:8020</value>
-  </property>
-  <property>
-    <name>dfs.namenode.http-address</name>
-    <value>0.0.0.0:9870</value>
+    <value>namenode:8020</value>
   </property>
 
+  <!-- NameNode HTTP server address and port -->
+  <property>
+    <name>dfs.namenode.http-address</name>
+    <value>namenode:9870</value>
+  </property>
+
+  <!-- NameNode secondary HTTP server address and port -->
+  <property>
+    <name>dfs.namenode.secondary.http-address</name>
+    <value>namenode:9868</value>
+  </property>
+
+  <!-- DataNode server address (IPC) and port -->
   <property>
     <name>dfs.datanode.address</name>
     <value>0.0.0.0:9866</value>
   </property>
+
+  <!-- DataNode HTTP server address and port -->
   <property>
     <name>dfs.datanode.http.address</name>
     <value>0.0.0.0:9864</value>
   </property>
+
+  <!-- DataNode IPC server address and port -->
   <property>
     <name>dfs.datanode.ipc.address</name>
     <value>0.0.0.0:9867</value>
   </property>
 
+  <!-- Use hostname for DataNode communication -->
   <property>
-    <name>dfs.datanode.hostname</name>
-    <value>192.168.101.6</value>
+    <name>dfs.datanode.use.datanode.hostname</name>
+    <value>true</value>
   </property>
 
+  <!-- Client uses DataNode hostname -->
   <property>
     <name>dfs.client.use.datanode.hostname</name>
-    <value>true</value>
+    <value>false</value>
+  </property>
+
+  <!-- NameNode startup delay tolerance -->
+  <property>
+    <name>dfs.namenode.startup</name>
+    <value>normal</value>
+  </property>
+
+  <!-- Reduce NameNode-DataNode heartbeat interval for faster detection -->
+  <property>
+    <name>dfs.heartbeat.interval</name>
+    <value>3</value>
+  </property>
+
+  <!-- NameNode determines DataNode is dead after this interval -->
+  <property>
+    <name>dfs.namenode.heartbeat.recheck-interval</name>
+    <value>300000</value>
+  </property>
+
+  <!-- Enable block reports optimization -->
+  <property>
+    <name>dfs.block.report.interval.msec</name>
+    <value>21600000</value>
   </property>
 </configuration>

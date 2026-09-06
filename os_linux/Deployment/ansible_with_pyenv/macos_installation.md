@@ -180,6 +180,10 @@ eval "$(pyenv virtualenv-init -)"
 
 ```bash
 # Reload the current shell so the new PATH and pyenv hooks become active.
+# if .zshrc does not exist
+
+touch ~/.zshrc
+
 source ~/.zprofile
 source ~/.zshrc
 ```
@@ -260,7 +264,16 @@ python -m pip list | grep ansible-core
 
 ```bash
 # Deactivate the current virtualenv if it is active.
+pyen activate
+
 pyenv deactivate
+# switch to global pyenv
+pyenv global system
+#Check current env
+echo $PYENV_VIRTUAL_ENV
+echo $PYENV_VERSION
+# Check all env variables
+env | grep PYENV
 
 # Remove the dedicated environment when a clean rebuild is needed.
 pyenv virtualenv-delete ansible-2.21-env

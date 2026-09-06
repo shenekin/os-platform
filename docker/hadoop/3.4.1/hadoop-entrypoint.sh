@@ -10,37 +10,16 @@ export HADOOP_CONF_DIR="${HADOOP_HOME}/etc/hadoop"
 export PATH="${PATH}:${HADOOP_HOME}/bin:${HADOOP_HOME}/sbin"
 
 # Fix JAVA_HOME in hadoop-env.sh
-sed -i '54s|^# export JAVA_HOME=|export JAVA_HOME=/opt/java/openjdk|' "${HADOOP_CONF_DIR}/hadoop-env.sh"
+sed -i '54s|^# export JAVA_HOME=|export JAVA_HOME=/opt/java/openjdk|' "${HADOOP_CONF_DIR}/hadoop-env.sh" 2>/dev/null || true
 
+# Set HADOOP_NICENESS to suppress warnings
 if ! grep -q '^export HADOOP_NICENESS=' "${HADOOP_CONF_DIR}/hadoop-env.sh"; then
   echo 'export HADOOP_NICENESS=0' >> "${HADOOP_CONF_DIR}/hadoop-env.sh"
 fi
 
-# Patch core-site.xml and hdfs-site.xml to use localhost
+# Temporarily backup original config files
 CORE_SITE="${HADOOP_CONF_DIR}/core-site.xml"
 HDFS_SITE="${HADOOP_CONF_DIR}/hdfs-site.xml"
-
-# Fix core-site.xml namenode address
-sed -i 's|hdfs://namenode:9000|hdfs://127.0.0.1:9000|g' "$CORE_SITE"
-
-# Add namenode address properties to hdfs-site.xml
-cat > /tmp/namenode_props.xml << 'PROPS'
-  <property>
-    <name>dfs.namenode.rpc-address</name>
-    <value>127.0.0.1:9000</value>
-  </property>
-  <property>
-    <name>dfs.namenode.http-address</name>
-    <value>127.0.0.1:9870</value>
-  </property>
-PROPS
-
-sed -i '/<\/configuration>/d' "$HDFS_SITE"
-cat /tmp/namenode_props.xml >> "$HDFS_SITE"
-echo '</configuration>' >> "$HDFS_SITE"
-
-mkdir -p /tmp/hadoop-root /tmp/hadoop-hadoop "${HADOOP_HOME}/logs"
-chown -R hadoop:hadoop /tmp/hadoop-hadoop "${HADOOP_HOME}/logs" 2>/dev/null || true
 
 # Ensure namenode directory is writable
 NAMENODE_DIR="/hadoop/dfs/name"
@@ -54,29 +33,60 @@ mkdir -p "$DATANODE_DIR"
 chown -R hadoop:hadoop "$DATANODE_DIR" 2>/dev/null || true
 chmod 755 "$DATANODE_DIR" 2>/dev/null || true
 
-if [ ! -d "${NAMENODE_DIR}/current" ]; then
-  sudo -u hadoop "${HADOOP_HOME}/bin/hdfs" namenode -format -force -nonInteractive 2>&1 | tail -5 || true
-fi
+# Create log directory
+LOG_DIR="/var/log/hadoop"
+mkdir -p "$LOG_DIR"
+chown -R hadoop:hadoop "$LOG_DIR" 2>/dev/null || true
+chmod 755 "$LOG_DIR" 2>/dev/null || true
 
+# Create tmp directories for Hadoop
+mkdir -p /tmp/hadoop-root /tmp/hadoop-hadoop 2>/dev/null || true
+chown -R hadoop:hadoop /tmp/hadoop-hadoop 2>/dev/null || true
+
+# Start SSH daemon
 /usr/sbin/sshd
 
-# Direct start for host network
+# Format NameNode on first startup
+if [ ! -d "${NAMENODE_DIR}/current" ]; then
+  echo "Formatting NameNode..."
+  sudo -u hadoop "${HADOOP_HOME}/bin/hdfs" namenode -format -force -nonInteractive 2>&1 | tail -10 || true
+  sleep 2
+fi
+
+# Start Hadoop services based on node type
 case "${HADOOP_NODE_TYPE:-namenode}" in
   namenode)
+    echo "Starting Hadoop NameNode..."
     sudo -u hadoop "${HADOOP_HOME}/bin/hdfs" namenode &
     NAMENODE_PID=$!
-    sleep 3
+    sleep 5
+    
+    # Tail the logs
     tail -F "${HADOOP_HOME}"/logs/*namenode*.log 2>/dev/null &
+    TAIL_PID=$!
+    
+    # Wait for the main process
     wait $NAMENODE_PID
     ;;
+    
   datanode)
-    sleep 8
+    echo "Waiting for NameNode to be ready..."
+    sleep 15
+    
+    echo "Starting Hadoop DataNode..."
     sudo -u hadoop "${HADOOP_HOME}/bin/hdfs" datanode &
     DATANODE_PID=$!
+    
+    # Tail the logs
     tail -F "${HADOOP_HOME}"/logs/*datanode*.log 2>/dev/null &
+    TAIL_PID=$!
+    
+    # Wait for the main process
     wait $DATANODE_PID
     ;;
+    
   *)
+    echo "Unknown node type: ${HADOOP_NODE_TYPE}"
     sleep infinity
     ;;
 esac
