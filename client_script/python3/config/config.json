@@ -1,0 +1,39 @@
+{
+  "_comments": {
+    "purpose": "Extract complete rows when Proxy Destination URL is not empty.",
+    "paths": "Relative paths are resolved from the directory containing this config.json file. Absolute paths are also supported on Windows, macOS, and Linux.",
+    "row_numbers": "header_row identifies the field-name row. data_start_row identifies the first row eligible for extraction.",
+    "row_conditions": "Add one object for each row condition. Use condition_mode all for AND logic or any for OR logic.",
+    "output_columns": "Use an empty list to export every column, or list header names, Excel letters, or one-based column numbers.",
+    "preserve_format_columns": "Copy source cell formatting for every extracted cell in the listed columns, including wrapped text.",
+    "preserve_format_values": "Copy source cell formatting when a configured column contains one of the configured values.",
+    "operators": "Supported operators: not_empty, empty, equals, not_equals, contains, not_contains, starts_with, ends_with, regex."
+  },
+  "input_file": "/Users/ekin/Downloads/excel_input_output/input/CMP-S2C-PROD-Default-Firewall-Rule-20260823.xlsx",
+  "output_file": "/Users/ekin/Downloads/excel_input_output/output/CMP-S2C-PROD-Default-Firewall-Rule-20260823-extracted.xlsx",
+  "sheet_name": null,
+  "header_row": 2,
+  "data_start_row": 4,
+  "data_only": false,
+  "condition_mode": "all",
+  "row_conditions": [
+    {
+      "column": "Proxy Destination URL",
+      "operator": "not_empty"
+    }
+  ],
+  "output_columns": [],
+  "preserve_format_columns": [
+    "Proxy Destination URL"
+  ],
+  "preserve_format_values": [
+    {
+      "column": "Destination Service Name",
+      "values": [
+        "Security Proxy VIP",
+        "Proxy VIP"
+      ]
+    }
+  ],
+  "output_sheet_name": "Extracted Data"
+}
