@@ -1,0 +1,396 @@
+{\rtf1\ansi\ansicpg1252\cocoartf2870
+\cocoatextscaling0\cocoaplatform0{\fonttbl\f0\fnil\fcharset0 HelveticaNeue;}
+{\colortbl;\red255\green255\blue255;\red0\green0\blue0;}
+{\*\expandedcolortbl;;\cssrgb\c0\c0\c0\c84706;}
+\paperw11900\paperh16840\margl1440\margr1440\vieww37860\viewh21260\viewkind0
+\deftab720
+\pard\pardeftab720\partightenfactor0
+
+\f0\fs24 \cf2 \expnd0\expndtw0\kerning0
+\
+# Comprehensive Deployment Plan: Redis 5.0.12 Six-Node Cluster on Ubuntu 24.04\
+\
+> \uc0\u9888 \u65039  **Important upfront warning**: Redis 5.0.12 was released in 2021, and the Redis 5.x line reached end-of-life (EOL) in 2022. Ubuntu 24.04 (Noble) ships Redis 7.x by default, and its GCC 13 / OpenSSL 3.0 toolchain creates compatibility issues when compiling Redis 5.x. **You should explicitly acknowledge production risk and evaluate upgrading to Redis 6.2 / 7.x.** The plan below follows your requirement and is built around Redis 5.0.12.\
+\
+---\
+\
+## 1. Overall Architecture Design\
+\
+### 1.1 Cluster Topology (Recommended: 3 Masters + 3 Replicas)\
+\
+| Node | Role | Suggested Host | Redis Port | Cluster Bus Port |\
+|------|------|----------------|-----------|------------------|\
+| node1 | Master A | Dedicated host / VM1 | 6379 | 16379 |\
+| node2 | Master B | Dedicated host / VM2 | 6379 | 16379 |\
+| node3 | Master C | Dedicated host / VM3 | 6379 | 16379 |\
+| node4 | Replica A | Dedicated host / VM1 | 6379 | 16379 |\
+| node5 | Replica B | Dedicated host / VM2 | 6379 | 16379 |\
+| node6 | Replica C | Dedicated host / VM3 | 6379 | 16379 |\
+\
+**Deployment model options**:\
+- **A. Six dedicated VMs/physical servers**: Best fault isolation \'97 recommended for production.\
+- **B. Three physical hosts \'d7 2 instances each**: Saves resources, but a master and its replica must not live on the same machine (anti-affinity required \'97 A and Replica A must not share a host).\
+- **C. Single host with 6 instances**: Test only.\
+\
+> Production recommendation: **3 physical hosts or hypervisors, 2 instances per host**, with anti-affinity ensuring a master and its replica are never co-located.\
+\
+### 1.2 Why 6 Nodes Are Required\
+- Redis Cluster requires at least **3 masters**; automatic failover for any master requires replicas.\
+- 3 masters + 3 replicas is the official "minimum viable" production shape.\
+- With replica count = 1, you must combine `cluster-require-full-coverage no` with a sensible `cluster-node-timeout`.\
+\
+---\
+\
+## 2. Hardware and System Planning\
+\
+### 2.1 Hardware Recommendations\
+\
+| Item | Minimum | Recommended |\
+|------|---------|-------------|\
+| CPU | 2 cores | 4\'968 cores (Redis main thread is single-threaded and CPU-bound) |\
+| Memory | 8 GB | 16\'9632 GB (**reserve 50% for fork/COW**, so dataset \uc0\u8804  50% of RAM) |\
+| Disk | 100 GB SSD | NVMe SSD, with space reserved for RDB + AOF |\
+| Network | 1 Gbps | 10 Gbps internal network + dedicated cluster-bus network |\
+\
+**Memory sizing rule**: max dataset per node \uc0\u8804  50% of physical memory. Exceeding this triggers OOM or heavy swapping.\
+\
+### 2.2 Ubuntu 24.04 System-Level Pre-configuration\
+\
+```bash\
+# 1. Kernel parameters\
+cat >> /etc/sysctl.conf <<'EOF'\
+# Required by Redis\
+vm.overcommit_memory = 1\
+# Memory / network\
+net.core.somaxconn = 65535\
+net.ipv4.tcp_max_syn_backlog = 65535\
+net.ipv4.tcp_tw_reuse = 1\
+vm.swappiness = 1\
+# Cluster heartbeat\
+net.ipv4.tcp_keepalive_time = 300\
+EOF\
+sysctl -p\
+\
+# 2. Disable Transparent Huge Pages (THP)\
+echo never > /sys/kernel/mm/transparent_hugepage/enabled\
+echo never > /sys/kernel/mm/transparent_hugepage/defrag\
+# Persist via /etc/rc.local or a systemd unit so it survives reboot\
+\
+# 3. File descriptors\
+cat >> /etc/security/limits.conf <<'EOF'\
+redis soft nofile 65535\
+redis hard nofile 65535\
+redis soft nproc  65535\
+redis hard nproc  65535\
+EOF\
+\
+# 4. Create the service user\
+useradd -r -s /sbin/nologin redis\
+\
+# 5. Time synchronization\
+apt install -y chrony && systemctl enable --now chrony\
+```\
+\
+### 2.3 Build Dependencies (Ubuntu 24.04 + GCC 13 Compatibility)\
+\
+```bash\
+apt update\
+apt install -y build-essential tcl pkg-config libssl-dev \\\
+               libsystemd-dev curl wget gcc make\
+```\
+\
+**Key compatibility issues**:\
+- **GCC \uc0\u8805  10 defaults to `-fno-common`**: Redis 5.0.12 compilation fails with "multiple definition" errors \u8594  you must build with `make CFLAGS="-fcommon"`, or `make MALLOC=libc CFLAGS="-fcommon"`.\
+- **OpenSSL 3.0**: Redis 5.0.12's TLS module (`redis-cli --tls`) may be incompatible. If TLS is required, you'll need to patch the source or use an OpenSSL 1.1 compatibility layer.\
+- **Jemalloc**: Redis 5.0.12 bundles jemalloc 4.x, which typically fails to build in this toolchain \uc0\u8594  **use `make MALLOC=libc`** (slightly lower performance, but stability first).\
+\
+---\
+\
+## 3. Installation and Deployment Options\
+\
+### 3.1 Option 1: Build from Source (Recommended \'97 Maximum Control)\
+\
+```bash\
+cd /opt\
+wget http://download.redis.io/releases/redis-5.0.12.tar.gz\
+tar xzf redis-5.0.12.tar.gz && cd redis-5.0.12\
+\
+# GCC 13-compatible build\
+make MALLOC=libc CFLAGS="-fcommon" -j$(nproc) && make install PREFIX=/usr/local/redis\
+\
+# Verify\
+/usr/local/redis/bin/redis-server --version\
+```\
+\
+> Alternative: If you want to keep jemalloc for performance, you can try replacing jemalloc with 5.x before compiling, but that introduces extra variables \'97 not recommended.\
+\
+### 3.2 Option 2: Docker (Not Recommended for Redis 5.0.12 \'97 Test Only)\
+\
+```bash\
+docker run -d --name redis5 -p 6379:6379 -v /data/redis:/data redis:5.0.12\
+```\
+> The official 5.0.12 image runs on Ubuntu 24.04 hosts, but you lose kernel tuning and systemd management \'97 **not recommended for production**.\
+\
+### 3.3 Directory Layout\
+\
+```\
+/usr/local/redis/             # Binaries\
+/etc/redis              # Config directory\
+/var/lib/redis          # Data directory (AOF/RDB)\
+/var/log/redis          # Logs\
+/var/run/redis          # PID file, socket\
+```\
+\
+### 3.4 systemd Unit\
+\
+```ini\
+# /etc/systemd/system/redis@.service\
+[Unit]\
+Description=Redis Cluster Node %i\
+After=network.target\
+\
+[Service]\
+Type=notify\
+User=redis\
+Group=redis\
+ExecStart=/usr/local/redis/bin/redis-server /etc/redis/%i/redis.conf\
+ExecStop=/usr/local/redis/bin/redis-cli -p $(grep '^port ' /etc/redis/%i/redis.conf | awk '\{print $2\}') shutdown\
+Restart=always\
+LimitNOFILE=65535\
+RuntimeDirectory=redis/%i\
+LogsDirectory=redis/%i\
+\
+[Install]\
+WantedBy=multi-user.target\
+```\
+\
+> Note: Ubuntu 24.04's systemd 252 has limited compatibility with `Type=notify` on older Redis versions. If you see startup timeouts, switch to `Type=forking` + `pidfile`.\
+\
+---\
+\
+## 4. Redis Configuration (redis.conf)\
+\
+### 4.1 Common Key Settings\
+\
+```conf\
+# Network\
+bind 0.0.0.0\
+protected-mode no\
+port 6379\
+tcp-backlog 511\
+timeout 0\
+tcp-keepalive 300\
+daemonize no\
+\
+# Security (cluster-wide password)\
+requirepass YourStrongPassw0rd!\
+masterauth   YourStrongPassw0rd!\
+\
+# Directories\
+dir /var/lib/redis\
+logfile /var/log/redis/redis.log\
+pidfile /var/run/redis/redis.pid\
+\
+# Persistence (AOF everysec + RDB hybrid recommended)\
+appendonly yes\
+appendfsync everysec\
+no-appendfsync-on-rewrite yes\
+auto-aof-rewrite-percentage 100\
+auto-aof-rewrite-min-size 64mb\
+\
+save 900 1\
+save 300 10\
+save 60 10000\
+rdbcompression yes\
+rdbchecksum yes\
+dbfilename dump.rdb\
+\
+# Slow log and memory\
+slowlog-log-slower-than 10000\
+slowlog-max-len 512\
+maxmemory 8gb\
+maxmemory-policy allkeys-lru     # Depends on workload; avoid noeviction in a cluster\
+\
+# Clients\
+maxclients 10000\
+\
+# Cluster\
+cluster-enabled yes\
+cluster-config-file nodes-6379.conf\
+cluster-node-timeout 15000\
+cluster-require-full-coverage no\
+cluster-allow-reads-when-down yes\
+cluster-migration-barrier 1\
+```\
+\
+### 4.2 Key Parameter Explanations\
+\
+| Parameter | Recommended | Notes |\
+|-----------|-------------|-------|\
+| `cluster-node-timeout` | 15000ms | Too low = false failovers; too high = slow recovery. Bump to 20000\'9630000 in jittery networks. |\
+| `cluster-require-full-coverage` | **no** | Keeps serving even when some slots are down \'97 required in production |\
+| `cluster-allow-reads-when-down` | yes | Allows replica reads when master is unavailable |\
+| `maxmemory` | 50% of RAM | Prevents OOM |\
+| `appendfsync` | everysec | Balance of performance and durability |\
+| `tcp-keepalive` | 300 | Prevents NAT/LB disconnections |\
+\
+---\
+\
+## 5. Cluster Creation and Initialization\
+\
+### 5.1 Start All Nodes\
+\
+```bash\
+for i in 1 2 3 4 5 6; do\
+  systemctl enable --now redis@6379\
+done\
+```\
+\
+### 5.2 Create the Cluster (Run on node1)\
+\
+```bash\
+/usr/local/redis/bin/redis-cli --cluster create \\\
+  10.0.0.11:6379 10.0.0.12:6379 10.0.0.13:6379 \\\
+  10.0.0.14:6379 10.0.0.15:6379 10.0.0.16:6379 \\\
+  --cluster-replicas 1 \\\
+  -a 'YourStrongPassw0rd!'\
+```\
+\
+> Redis 5.0.12 includes `redis-cli --cluster` natively \'97 no Ruby `redis-trib` needed.\
+\
+### 5.3 Verify Cluster Health\
+\
+```bash\
+redis-cli -c -h 10.0.0.11 -p 6379 -a 'pass' cluster info\
+redis-cli -c -h 10.0.0.11 -p 6379 -a 'pass' cluster nodes\
+redis-cli -c -h 10.0.0.11 -p 6379 -a 'pass' --cluster check 10.0.0.11:6379\
+```\
+\
+Expected results:\
+- `cluster_state:ok`\
+- `cluster_slots_assigned:16384`\
+- `known_nodes:6`\
+\
+---\
+\
+## 6. Security Planning\
+\
+1. **Network isolation**: Expose 6379 / 16379 only on internal networks with allowlist rules \'97 **never on the public internet**.\
+2. **Passwords**: Use `requirepass` + `masterauth` with strong passwords (\uc0\u8805  32 chars).\
+3. **Rename dangerous commands** (via `rename-command`; in cluster mode some commands must be renamed consistently across nodes):\
+   ```conf\
+   rename-command FLUSHALL ""\
+   rename-command FLUSHDB  ""\
+   rename-command CONFIG   "CONFIG-xxx-random"\
+   rename-command KEYS     ""\
+   ```\
+4. **TLS (optional)**: Redis 5.0.12 supports `tls-*` settings natively, but OpenSSL 3.0 on Ubuntu 24.04 needs careful testing. If TLS can't be compiled, fall back to internal IPSec/VPN.\
+5. **Host hardening**: ufw/nftables + fail2ban, disable root SSH, key-based auth only.\
+6. **Auditing**: Enable slow log + command sampling (use MONITOR cautiously in production).\
+\
+---\
+\
+## 7. Monitoring and Alerting\
+\
+| Layer | Tooling |\
+|-------|---------|\
+| Built-in | `INFO`, `SLOWLOG`, `LATENCY` |\
+| Collection | redis_exporter (Prometheus) or Telegraf |\
+| Visualization | Grafana + Redis Dashboard |\
+| Critical alerts | `cluster_state!=ok`, `connected_slaves<1`, `used_memory>80%`, `rejected_connections>0`, `master_link_status:down`, spikes in `evicted_keys`, `rdb_last_bgsave_status:err` |\
+\
+**Lightweight self-hosted monitoring example**:\
+```bash\
+redis-cli -a pass --cluster check 10.0.0.11:6379\
+```\
+Run via cron every minute; trigger DingTalk/WeCom/email alerts on failure.\
+\
+---\
+\
+## 8. Backup and Recovery Planning\
+\
+### 8.1 Backup Strategy\
+\
+- **RDB snapshots**: `save` rules + scheduled `BGSAVE`; ship files off-host (rsync to backup host / object storage).\
+- **AOF**: enable `appendonly yes`; archive AOF files periodically.\
+- **Frequency**: Production BGSAVE every 4\'966 hours, retain 7 days; daily backups retain 30 days.\
+- **Tool**: `redis-cli --rdb` to pull from a replica (no impact on master).\
+\
+```bash\
+# Pull RDB from a replica \'97 does not affect the master\
+redis-cli -h 10.0.0.14 -p 6379 -a pass --rdb /backup/redis-$(date +%F).rdb\
+```\
+\
+### 8.2 Recovery Flow\
+\
+1. Stop the failed node's Redis.\
+2. Overwrite the data directory with the backup RDB/AOF.\
+3. Start Redis; confirm the cluster re-admits it via `cluster nodes`.\
+4. If slot distribution is abnormal, run `redis-cli --cluster fix`.\
+\
+---\
+\
+## 9. High Availability and Failure Drills\
+\
+| Scenario | Expected Behaviour |\
+|----------|--------------------|\
+| Master goes down | Its replica promotes after ~`cluster-node-timeout` (\uc0\u8776  15s) |\
+| Master and its replica both go down | Those slots are unavailable; `cluster-require-full-coverage no` keeps the remaining slots serving |\
+| Network partition | Nodes in the minority partition stop serving; majority continues |\
+| Replica lag | Alert when `master_repl_offset` on a replica falls behind persistently |\
+\
+**Drill recommendations** (at least quarterly):\
+- `kill -9` a master \uc0\u8594  observe automatic failover and business continuity.\
+- Stop a replica \uc0\u8594  expect `connected_slaves` alert.\
+- `redis-cli --cluster reshard` to practice slot migration.\
+\
+---\
+\
+## 10. Operations and Change-Management Standards\
+\
+1. **Upgrade / scale-out**: Add nodes via `redis-cli --cluster add-node`, then `reshard` slots. Scale-in: `reshard` slots away first, then `del-node`.\
+2. **Client connectivity**:\
+   - Use **cluster-aware clients** (Jedis Cluster / Lettuce / Predis cluster mode, etc.).\
+   - Avoid multi-key commands that span slots; use `\{hash-tag\}` to co-locate keys in the same slot.\
+3. **Big-key and hot-key management**: Analyze RDB with `redis-rdb-tools` before go-live; choose `maxmemory-policy` appropriately.\
+4. **Change windows**: Rolling upgrades \uc0\u8594  upgrade replicas first \u8594  manual failover \u8594  upgrade old masters \u8594  rejoin one at a time.\
+5. **Documentation**: Node inventory, ports, password management (Vault/KMS), topology diagrams, rollback procedures.\
+\
+---\
+\
+## 11. Risk Checklist (Must Review)\
+\
+| Risk | Impact | Mitigation |\
+|------|--------|------------|\
+| **Redis 5.0.12 is EOL** | No security patches | Plan upgrade to 6.2/7.x within 3\'966 months; 5.0.12 only as transitional |\
+| **GCC 13 build failure** | Deployment blocker | `-fcommon` + `MALLOC=libc`; pre-validate in test environment |\
+| **OpenSSL 3.0 TLS incompatibility** | Cannot enable TLS | Network isolation + strong passwords; or patch |\
+| **Kernel 6.8 + systemd 252** | Service startup anomalies | Use `Type=forking` + pidfile compatibility mode |\
+| **Ubuntu 24.04 lacks default Redis user dirs** | Permission errors | Manually `chown -R redis:redis /var/lib/redis /var/log/redis` |\
+| **Cluster split-brain** | Data inconsistency | Sensible `node-timeout` + network topology + majority-quorum |\
+\
+---\
+\
+## 12. Deployment Checklist (Printable)\
+\
+- [ ] 6 hosts ready (or 3 hosts \'d7 2 instances), anti-affinity confirmed\
+- [ ] Clock sync, kernel parameters, THP, FD limits configured\
+- [ ] Build deps installed; `make MALLOC=libc CFLAGS="-fcommon"` succeeds\
+- [ ] systemd unit, directories, permissions, users prepared\
+- [ ] 6 redis.conf files in place (ports/passwords/dirs consistent; no master-vs-replica differences)\
+- [ ] All 6 nodes started; `INFO` returns normally\
+- [ ] `redis-cli --cluster create` succeeds; `cluster_state:ok`\
+- [ ] Master/replica topology verified; `connected_slaves=1`\
+- [ ] Monitoring integrated; alert rules validated\
+- [ ] Backup cron installed; off-host backup verified\
+- [ ] Client integration tested (SET/GET/MGET/\{tag\} cross-slot error check)\
+- [ ] Failover drill: kill a master, automatic promotion succeeds\
+- [ ] Documentation archived: topology diagram, credentials, rollback steps\
+\
+---\
+\
+## Conclusion\
+\
+**Key takeaways**: You can deploy a 6-node Redis 5.0.12 cluster on Ubuntu 24.04 as requested, but the **main challenges are compile compatibility (GCC 13 `-fcommon`, `MALLOC=libc`) and the Redis 5.0.x EOL risk**. Before deployment, run the full compile \uc0\u8594  cluster creation \u8594  failover drill workflow in a test environment. If this cluster will carry production-critical workloads, plan a parallel path to Redis 6.2/7.x (multi-threaded I/O, native ACL, full TLS support, continued security updates from 6.x onward).\
+\
+I}
